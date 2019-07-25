@@ -23,6 +23,12 @@ module.exports = appInfo => {
     // myAppName: 'egg',
   };
 
+  config.logger = {
+    level: 'DEBUG',
+    // 生产环境打印info级别日志
+    allowDebugAtProd: true,
+  };
+
   return {
     ...config,
     ...userConfig,
