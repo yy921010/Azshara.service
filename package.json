@@ -1,5 +1,5 @@
 {
-  "name": "Azshara",
+  "name": "azshara",
   "version": "1.0.0",
   "description": "ashara service platform",
   "private": true,
@@ -7,9 +7,14 @@
     "declarations": true
   },
   "dependencies": {
+    "await-stream-ready": "^1.0.1",
+    "dayjs": "^1.8.15",
     "egg": "^2.15.1",
     "egg-mysql": "^3.0.0",
-    "egg-scripts": "^2.11.0"
+    "egg-scripts": "^2.11.0",
+    "egg-validate": "^2.0.2",
+    "images": "^3.0.2",
+    "stream-wormhole": "^1.1.0"
   },
   "devDependencies": {
     "autod": "^3.0.1",

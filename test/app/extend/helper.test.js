@@ -51,6 +51,7 @@ describe('test/app/extend/helper.test.js', () => {
       age: 'AGE',
     };
     const contents = ctx.helper.selectColumns('TEST', fieldMap);
+    ctx.helper._makeUploadDir();
     assert(contents === 'SELECT TEST.USER_NAME AS userName, TEST.AGE AS age FROM TEST');
   });
 

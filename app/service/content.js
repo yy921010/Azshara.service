@@ -2,52 +2,65 @@
 const { Service } = require('egg');
 
 class ContentService extends Service {
-  async find(size = 10, num = 1, queryOpt) {
-    const { ctx, config, app: { mysql } } = this;
+
+
+  /**
+     * 表 actor,content, definition,picture,geners
+     * @param {*} param0
+     */
+  insertContent({ contents, picture }) {
+
+  }
+
+  /**
+ * 新增人员
+ * @param {*} param0
+ */
+  async insertActor({ actor, picture }) {
+    const { ctx, app: { mysql }, config } = this;
+    Object.assign(actor, {
+      actorId: ctx.helper.randamStr(64),
+    });
+    const pictureRealationField = ctx.helper.modelToField({
+      pictureId: picture.id,
+      mainId: actor.actorId,
+    });
+    const actorField = ctx.helper.modelToField(actor);
+    Object.assign(actorField, {
+      CREATE_AT: mysql.literals.now,
+      UPDATE_AT: mysql.literals.now,
+    });
+
+    const result = await mysql.beginTransactionScope(async conn => {
+      await conn.insert(config.table.ACTORS, actorField);
+      await conn.insert(config.table.PICTURE_RELATION, pictureRealationField);
+      ctx.logger.debug('[ContentService][insertActor] msg--> insert actor and pic_relation success');
+      return { success: true };
+    }, ctx);
+    return result.success;
+
+  }
+
+
+  async getActor(size = 10, num = 1, queryOpt) {
+    const { ctx, app: { mysql }, config } = this;
     const offset = (num - 1) * size;
-    ctx.logger.debug('[ContentService][findBySizeAndNumber][offset]: %d', offset);
-    ctx.logger.debug('[ContentService][findBySizeAndNumber][pageNumber]: %d', num);
-    let contentSql = ctx.helper.selectColumns(config.table.CONTENT, {
+    let sql = ctx.helper.selectColumns(config.table.ACTORS, {
       id: 'ID',
-      contentId: 'CONTENT_ID',
-      contentName: 'CONTENT_NAME',
-      type: 'TYPE',
-      contentType: 'CONTENT_TYPE',
-      serialNumber: 'SERIAL_NUMBER',
-      rating: 'RATING',
-      title: 'TITLE',
-      subTitle: 'SUB_TITLE',
+      name: 'NAME',
       introduce: 'INTRODUCE',
-      createTime: 'CREATE_TIME',
-      updateTime: 'UPDATE_TIME',
+      actionId: 'ACTOR_ID',
+      createAT: 'CREATE_AT',
+      updateAt: 'UPDATE_AT',
     });
     if (!queryOpt) {
-      contentSql += mysql._limit(size, offset);
-      return await mysql.query(contentSql);
+      sql += mysql._limit(size, offset);
+      return await mysql.query(sql);
     }
-    ctx.logger.debug('[ContentService][findBySizeAndNumber][queryOpt]:', JSON.stringify(queryOpt));
     mysql._where(queryOpt.where);
-    return await mysql.query(contentSql);
+    ctx.logger.debug('[ContentService][getActor] sql-->', sql);
+    return await mysql.query(sql);
   }
-
-  async insert(content = {}) {
-    const { ctx, config, app } = this;
-    if (ctx.helper.isEmpty(content)) {
-      ctx.logger.info('[ContentService][findBySizeAndNumber][insert] [msg] content is empty');
-      return false;
-    }
-    content = ctx.helper.modelToField(content);
-    content = Object.assign(content, {
-      CREATE_TIME: app.mysql.literals.now,
-      UPDATE_TIME: app.mysql.literals.now,
-    });
-    ctx.logger.debug('[ContentService][findBySizeAndNumber][insert] [content]', content);
-    const result = await app
-      .mysql.insert(config.table.CONTENT, content);
-    return result.affectedRows === 1;
-  }
-
-
 }
 
 module.exports = ContentService;

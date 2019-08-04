@@ -29,6 +29,22 @@ module.exports = appInfo => {
     allowDebugAtProd: true,
   };
 
+  config.upload = {
+    baseDir: 'app/public/',
+    imageService: '127.0.0.1:7001/public/',
+    media: 'media',
+  };
+
+  config.security = {
+    csrf: {
+      headerName: 'x-csrf-token',
+    },
+  };
+
+  config.multipart = {
+    fileExtensions: [ '' ],
+  };
+
   return {
     ...config,
     ...userConfig,

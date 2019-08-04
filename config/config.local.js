@@ -37,5 +37,9 @@ module.exports = appInfo => {
     PICTURE: 'tf_b_picture',
     PICTURE_RELATION: 'tf_b_picture_relation',
   };
+
+  config.logger = {
+    level: 'DEBUG',
+  };
   return config;
 };
