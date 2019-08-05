@@ -5,7 +5,8 @@ const Controller = require('./base_controller');
 class ActorController extends Controller {
   async index() {
     const { ctx } = this;
-    ctx.body = 'hi, egg';
+
+    ctx.body = await ctx.service.content.getActor();
   }
 
   async create() {

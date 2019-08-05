@@ -45,21 +45,32 @@ class ContentService extends Service {
   async getActor(size = 10, num = 1, queryOpt) {
     const { ctx, app: { mysql }, config } = this;
     const offset = (num - 1) * size;
-    let sql = ctx.helper.selectColumns(config.table.ACTORS, {
-      id: 'ID',
-      name: 'NAME',
-      introduce: 'INTRODUCE',
-      actionId: 'ACTOR_ID',
-      createAT: 'CREATE_AT',
-      updateAt: 'UPDATE_AT',
+    let sql = ctx.helper.selectColumns(
+      {
+        table: config.table.ACTORS,
+        mapColumns: [ 'id', 'name', 'introduce', 'actorId', 'createAt', 'updateAt' ],
+      }, {
+        table: config.table.PICTURE,
+        mapColumns: [ 'type', 'url' ],
+      }, {
+        table: config.table.PICTURE_RELATION,
+      });
+    const equal = {};
+    equal[`${config.table.ACTORS}.ACTOR_ID`] = `${config.table.PICTURE_RELATION}.MAIN_ID`;
+    equal[`${config.table.PICTURE}.ID`] = `${config.table.PICTURE_RELATION}.PICTURE_ID`;
+    sql += ctx.helper.whereMultiTable({
+      equal,
     });
-    if (!queryOpt) {
+    if (ctx.helper.isEmpty(queryOpt)) {
       sql += mysql._limit(size, offset);
-      return await mysql.query(sql);
+      ctx.logger.info('[ContentService][getActor] sql-->', sql);
+      const result = await mysql.query(sql);
+      return result;
     }
     mysql._where(queryOpt.where);
-    ctx.logger.debug('[ContentService][getActor] sql-->', sql);
-    return await mysql.query(sql);
+    ctx.logger.info('[ContentService][getActor] sql-->', sql);
+    const result = await mysql.query(sql);
+    return result;
   }
 }
 

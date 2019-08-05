@@ -42,6 +42,11 @@ module.exports = {
     return true;
   },
 
+
+  compact(array = []) {
+    return array.filter(a => a);
+  },
+
   /**
    * 将model的key 转换为大写
    * @param {object} modelMap model类型
@@ -52,63 +57,72 @@ module.exports = {
     }
     const keys = Object.keys(modelMap);
     const tempMap = {};
-    if (keys.length > 0) {
-      keys.forEach(key => {
-        let resultKey;
-        resultKey = key.replace(/[A-Z]/g, (txt, index) => {
-          return index === 0 ? txt : `_${txt}`;
-        });
-        resultKey = resultKey.toUpperCase();
-        tempMap[resultKey] = modelMap[key];
-      });
-    }
+    keys.forEach(key => {
+      const resultKey = this.toUpperCaseKey(key);
+      tempMap[resultKey] = modelMap[key];
+    });
     return tempMap;
+  },
+
+  toUpperCaseKey(key) {
+    return key
+      .replace(/[A-Z]/g, (txt, index) => (index === 0 ? txt : `_${txt}`))
+      .toUpperCase();
   },
 
   modelToFields(modelMaps = []) {
     return modelMaps.length > 0 ? modelMaps.map(item => this.modelToField(item)) : [];
   },
 
-  makeModelField(table, fieldMap = {}) {
-    if (this.isEmpty(fieldMap) || this.isEmpty(table)) {
-      return;
+  mapColummField(mapColumns = [], table) {
+    if (this.isEmpty(mapColumns) || this.isEmpty(table)) {
+      return '';
     }
-    const keys = Object.keys(fieldMap);
-    let tempStr = '';
-    const maxIndex = keys.length - 1;
-    keys.forEach((key, index) => {
-      if (maxIndex === index) {
-        tempStr += `${table}.${fieldMap[key]} AS ${key}`;
-      } else {
-        tempStr += `${table}.${fieldMap[key]} AS ${key}, `;
-      }
-    });
-    return tempStr;
+    const queryCaseArrs = mapColumns.map(key => (`${table}.${this.toUpperCaseKey(key)} AS ${key}`));
+    return queryCaseArrs.toString();
   },
 
-  selectColumns(table, fieldMap = {}) {
-    let columnStr = this.makeModelField(table, fieldMap);
-    if (!columnStr) {
-      columnStr = '*';
+  /**
+   *
+   * @param {table,mapColumns} queryFields
+   */
+  selectColumns(...queryFields) {
+    let sqlStr = 'SELECT * FROM ??';
+    const queryCaseArrs = queryFields
+      .map(queryField => {
+        return this.isEmpty(queryField.mapColumns) ?
+          '' : this.mapColummField(queryField.mapColumns, queryField.table);
+      })
+      .filter(a => a)
+      .toString();
+    const tableStr = queryFields
+      .map(item => item.table)
+      .toString();
+    if (!this.isEmpty(queryCaseArrs)) {
+      sqlStr = sqlStr.replace(/\*/, queryCaseArrs);
     }
-    if (columnStr === '*') {
-      return 'SELECT * FROM ??'.replace(/\?\?/, table);
-    }
-    return `SELECT ?? FROM ${table}`.replace(/\?\?/, columnStr);
+    return sqlStr.replace(/\?\?/, tableStr);
   },
   /**
    *
-   * @param {table,fieldSet,asName} queryField
-   * @param  {...any} tables
+   * @param {equalCase,queryCase} option
    */
-  selectColumnsMigrate(queryField, ...tables) {
-    tables.forEach(table => {
-
-    });
-  },
-
-  whereCaseMultipartTable() {
-
+  whereMultiTable({ equal, query }) {
+    if (this.isEmpty(equal)) {
+      this.logger.warn('[helper][whereMultiTable] msg--> equalField is Empty');
+      return '';
+    }
+    const equalFields = Object.keys(equal)
+      .map(key => (`${key} = ${equal[key]}`))
+      .join(' AND ');
+    let sqlStr = ` WHERE ${equalFields}`;
+    if (!this.isEmpty(query)) {
+      const queryCases = Object.keys(query)
+        .map(key => (`${key} = ${query[key]}`))
+        .join(' AND ');
+      sqlStr += ` AND ${queryCases}`;
+    }
+    return sqlStr;
   },
   /**
      * 创建初始化文件：upload, .temp
@@ -176,7 +190,7 @@ module.exports = {
       fs.rmdirSync(pathName);
       isScuess = true;
     } else {
-      this.logger.info('给定的路径不存在！');
+      this.logger.warn('[helper] [deleteDir] msg--> the path is not found');
     }
     return isScuess;
   },
@@ -202,20 +216,20 @@ module.exports = {
           if (file.indexOf(name) > -1) {
             fs.unlinkSync(curPath);
             isScuess = true;
-            this.logger.info('删除文件：' + curPath);
+            this.logger.info(' [helper] [deleteFileByName] msg--> delete success');
           }
         }
       });
 
     } else {
-      this.logger.info('给定的路径不存在：');
+      this.logger.warn('[helper] [deleteDir] msg--> the path is not found');
     }
     return isScuess;
   },
 
   randamStr(randamLength = 36) {
     const randamArrs = [],
-      strDec = '0123456789abcdef';
+      strDec = '0123456789abcdefghijklmnopqrstuvwxyz';
 
     for (let i = 0; i < randamLength; i++) {
       randamArrs[i] = strDec.substr(Math.floor(16 * Math.random()), 1);

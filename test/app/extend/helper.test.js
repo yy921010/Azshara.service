@@ -34,25 +34,74 @@ describe('test/app/extend/helper.test.js', () => {
   });
 
 
-  it('func makeModelField is TEST.USER_NAME AS userName, TEST.AGE AS age', () => {
+  it('func selectColumns for sigle table', () => {
     const ctx = app.mockContext();
-    const fieldMap = {
-      userName: 'USER_NAME',
-      age: 'AGE',
-    };
-    const contents = ctx.helper.makeModelField('TEST', fieldMap);
-    assert(contents === 'TEST.USER_NAME AS userName, TEST.AGE AS age');
+    const contents = ctx.helper.selectColumns({
+      table: 'TEST',
+      mapColumns: [ 'userName', 'age' ],
+    });
+    ctx.helper._makeUploadDir();
+    assert(contents === 'SELECT TEST.USER_NAME AS userName,TEST.AGE AS age FROM TEST');
   });
 
-  it('func selectColumns', () => {
+
+  it('func selectColumns for multipart tables', () => {
     const ctx = app.mockContext();
-    const fieldMap = {
-      userName: 'USER_NAME',
-      age: 'AGE',
-    };
-    const contents = ctx.helper.selectColumns('TEST', fieldMap);
-    ctx.helper._makeUploadDir();
-    assert(contents === 'SELECT TEST.USER_NAME AS userName, TEST.AGE AS age FROM TEST');
+    const contents = ctx.helper.selectColumns(
+      {
+        table: 'TABLE1',
+        mapColumns: [ 'name' ],
+      },
+      {
+        table: 'TABLE2',
+        mapColumns: [ 'userName', 'password' ],
+      },
+      {
+        table: 'TABLE3',
+        mapColumns: [ 'nickName', 'thirdPassLink' ],
+      }
+    );
+    assert(contents === 'SELECT TABLE1.NAME AS name,TABLE2.USER_NAME AS userName,TABLE2.PASSWORD AS password,TABLE3.NICK_NAME AS nickName,TABLE3.THIRD_PASS_LINK AS thirdPassLink FROM TABLE1,TABLE2,TABLE3');
+  });
+
+
+  it('func selectColumns for multipart tables not mapColumns', () => {
+    const ctx = app.mockContext();
+    const contents = ctx.helper.selectColumns(
+      {
+        table: 'TABLE1',
+        mapColumns: [ 'name' ],
+      },
+      {
+        table: 'TABLE2',
+      },
+      {
+        table: 'TABLE3',
+        mapColumns: [ 'nickName', 'thirdPassLink' ],
+      }
+    );
+    assert(contents === 'SELECT TABLE1.NAME AS name,TABLE3.NICK_NAME AS nickName,TABLE3.THIRD_PASS_LINK AS thirdPassLink FROM TABLE1,TABLE2,TABLE3');
+  });
+
+
+  it('func _toUpperCaseKey', () => {
+    const ctx = app.mockContext();
+    const contents = ctx.helper.toUpperCaseKey('userName');
+    assert(contents === 'USER_NAME');
+  });
+
+
+  it('func whereMultiTable', () => {
+    const ctx = app.mockContext();
+    const contents = ctx.helper.whereMultiTable({
+      equalField: {
+        'test.id': 'test1.id',
+      },
+      queryCase: {
+        'test.id': 1,
+      },
+    });
+    assert(contents === ' WHEN test.id = test1.id AND test.id = 1');
   });
 
 
