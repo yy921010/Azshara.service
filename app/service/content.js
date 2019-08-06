@@ -18,13 +18,17 @@ class ContentService extends Service {
  */
   async insertActor({ actor, picture }) {
     const { ctx, app: { mysql }, config } = this;
-    Object.assign(actor, {
-      actorId: ctx.helper.randamStr(64),
-    });
-    const pictureRealationField = ctx.helper.modelToField({
-      pictureId: picture.id,
-      mainId: actor.actorId,
-    });
+    let pictureRealationField = {};
+    if (!ctx.helper.isEmpty(picture.id)) {
+      Object.assign(actor, {
+        actorId: ctx.helper.randamStr(16),
+      });
+      pictureRealationField = ctx.helper.modelToField({
+        pictureId: picture.id,
+        mainId: actor.actorId,
+      });
+    }
+
     const actorField = ctx.helper.modelToField(actor);
     Object.assign(actorField, {
       CREATE_AT: mysql.literals.now,
@@ -33,7 +37,9 @@ class ContentService extends Service {
 
     const result = await mysql.beginTransactionScope(async conn => {
       await conn.insert(config.table.ACTORS, actorField);
-      await conn.insert(config.table.PICTURE_RELATION, pictureRealationField);
+      if (!ctx.helper.isEmpty(pictureRealationField)) {
+        await conn.insert(config.table.PICTURE_RELATION, pictureRealationField);
+      }
       ctx.logger.debug('[ContentService][insertActor] msg--> insert actor and pic_relation success');
       return { success: true };
     }, ctx);
@@ -42,7 +48,34 @@ class ContentService extends Service {
   }
 
 
-  async getActor(size = 10, num = 1, queryOpt) {
+  async getActors({ size, num, whereOpt }) {
+    const pageSize = size || 10,
+      pageNumber = num || 1;
+    const { ctx, app: { mysql }, config } = this;
+    const offset = (pageNumber - 1) * pageSize;
+    const countSql = `SELECT COUNT(1) FROM ${config.table.ACTORS}`;
+    let sql = ctx.helper.selectColumns({
+      table: config.table.ACTORS,
+      mapColumns: [ 'id', 'name', 'introduce', 'createAt', 'updateAt', 'actorId' ],
+    });
+    if (ctx.helper.isEmpty(whereOpt)) {
+      sql += mysql._limit(+size, +offset);
+      ctx.logger.debug('[ContentService][getActor] sql-->', sql);
+
+      const result = await mysql.beginTransactionScope(async conn => {
+        const items = await conn.query(sql);
+        const total = await conn.query(countSql);
+        return { items, total: total['COUNT(1)'] };
+      }, ctx);
+      return result;
+    }
+    sql += mysql._where(whereOpt);
+    ctx.logger.debug('[ContentService][getActor] sql-->', sql);
+    return await mysql.query(sql);
+  }
+
+
+  async getActorContainPicture(size = 10, num = 1, queryOpt) {
     const { ctx, app: { mysql }, config } = this;
     const offset = (num - 1) * size;
     let sql = ctx.helper.selectColumns(
@@ -63,12 +96,12 @@ class ContentService extends Service {
     });
     if (ctx.helper.isEmpty(queryOpt)) {
       sql += mysql._limit(size, offset);
-      ctx.logger.info('[ContentService][getActor] sql-->', sql);
+      ctx.logger.debug('[ContentService][getActor] sql-->', sql);
       const result = await mysql.query(sql);
       return result;
     }
     mysql._where(queryOpt.where);
-    ctx.logger.info('[ContentService][getActor] sql-->', sql);
+    ctx.logger.debug('[ContentService][getActor] sql-->', sql);
     const result = await mysql.query(sql);
     return result;
   }

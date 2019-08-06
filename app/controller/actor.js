@@ -4,9 +4,20 @@ const Controller = require('./base_controller');
 
 class ActorController extends Controller {
   async index() {
-    const { ctx } = this;
+    const { ctx, ctx: { request } } = this;
+    const getActorOption = {};
+    if (!(ctx.helper.isEmpty(request.query.pageNumber) || ctx.helper.isEmpty(request.query.pageSize))) {
+      getActorOption.num = request.query.pageNumber;
+      getActorOption.size = request.query.pageSize;
+    } else if (!ctx.helper.isEmpty(request.query.actorId)) {
+      getActorOption.whereOpt = {
+        ACTOR_ID: request.query.actorId,
+      };
+    }
+    const items = await ctx.service.content
+      .getActors(getActorOption);
+    this.success(items);
 
-    ctx.body = await ctx.service.content.getActor();
   }
 
   async create() {
@@ -14,15 +25,15 @@ class ActorController extends Controller {
     this.validate({
       name: {
         type: 'string',
-        require: false,
+        required: false,
       },
       introduce: {
         type: 'string',
-        require: false,
+        required: false,
       },
       imageId: {
         type: 'string',
-        require: false,
+        required: false,
       },
     }, ctx.request.body);
 

@@ -241,4 +241,14 @@ module.exports = {
     return n;
   },
 
+  limit(limit, offset) {
+    if (!limit || typeof limit !== 'number') {
+      return '';
+    }
+    if (typeof offset !== 'number') {
+      offset = 0;
+    }
+    return ' LIMIT ' + offset + ', ' + limit;
+  },
+
 };
