@@ -94,14 +94,14 @@ describe('test/app/extend/helper.test.js', () => {
   it('func whereMultiTable', () => {
     const ctx = app.mockContext();
     const contents = ctx.helper.whereMultiTable({
-      equalField: {
+      equal: {
         'test.id': 'test1.id',
       },
-      queryCase: {
+      query: {
         'test.id': 1,
       },
     });
-    assert(contents === ' WHEN test.id = test1.id AND test.id = 1');
+    assert(contents === ' WHERE test.id = test1.id AND test.id = 1');
   });
 
 
