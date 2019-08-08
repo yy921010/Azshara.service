@@ -4,14 +4,14 @@ const { app, assert } = require('egg-mock/bootstrap');
 
 describe('test/app/extend/helper.test.js', () => {
 
-  it('func isEmpty is true,when param is {}', () => {
+  it('empty object is true', () => {
     const ctx = app.mockContext();
     const contents = ctx.helper.isEmpty({});
     assert(contents);
   });
 
 
-  it('func isEmpty is true,when param is null', () => {
+  it('null is true', () => {
     const ctx = app.mockContext();
     const contents = ctx.helper.isEmpty(null);
     assert(contents);

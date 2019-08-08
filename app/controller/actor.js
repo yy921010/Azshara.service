@@ -14,7 +14,7 @@ class ActorController extends Controller {
         ACTOR_ID: request.query.actorId,
       };
     }
-    const items = await ctx.service.content
+    const items = await ctx.service.actor
       .getActors(getActorOption);
     this.success(items);
 
@@ -37,7 +37,7 @@ class ActorController extends Controller {
       },
     }, ctx.request.body);
 
-    const insertResult = await ctx.service.content.insertActor({
+    const insertResult = await ctx.service.actor.insertActor({
       actor: {
         name: ctx.request.body.name,
         introduce: ctx.request.body.introduce,
@@ -53,7 +53,6 @@ class ActorController extends Controller {
     } else {
       this.fail(500, 'insert actor fail');
     }
-
   }
 }
 

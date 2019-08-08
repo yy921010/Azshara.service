@@ -20,4 +20,28 @@ module.exports = class ImageService extends Service {
     });
     return result;
   }
+
+  async getImageWithMainId(mainId = '') {
+    const { app: { mysql }, ctx, config } = this;
+    ctx.logger.debug('[imageService] [getImageById] enter');
+    let sql = ctx.helper.selectColumns(
+      {
+        table: config.table.PICTURE,
+        mapColumns: [ 'id', 'type', 'url' ],
+      },
+      {
+        table: config.table.PICTURE_RELATION,
+      }
+    );
+    const equal = {};
+    equal[`${config.table.PICTURE}.ID`] = `${config.table.PICTURE_RELATION}.PICTURE_ID`;
+    const query = {};
+    query[ `${config.table.PICTURE_RELATION}.MAIN_ID`] = mysql.escape(mainId);
+    sql += ctx.helper.whereMultiTable({
+      equal,
+      query,
+    });
+    console.log(sql);
+    return await mysql.query(sql);
+  }
 };
