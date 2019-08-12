@@ -61,6 +61,7 @@ module.exports = {
       const resultKey = this.toUpperCaseKey(key);
       tempMap[resultKey] = modelMap[key];
     });
+    modelMap = {};
     return tempMap;
   },
 
@@ -167,7 +168,7 @@ module.exports = {
 
   /**
    * 删除文件夹
-   * @param {string} pathName
+   * @param {string} pathName 文件
    */
   deleteDir(pathName) {
     let files = [];

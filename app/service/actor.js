@@ -1,56 +1,144 @@
 'use strict';
 const { Service } = require('egg');
 let cacheTotal = 0;
-class ActorSerivce extends Service {
+
+class ActorService extends Service {
   /**
- * 新增人员
- * @param {*} param0
- */
+   * 新增人员
+   * @param {*} param 包含图片和演员
+   */
   async insertActor({ actor, picture }) {
     const { ctx, app: { mysql }, config } = this;
-    let pictureRealationField = {};
+    cacheTotal = null;
+    let pictureRelationField = {};
     if (!ctx.helper.isEmpty(picture.id)) {
-      Object.assign(actor, {
-        actorId: ctx.helper.randamStr(),
-      });
-      pictureRealationField = ctx.helper.modelToField({
+      actor.pictureId = ctx.helper.randamStr();
+      pictureRelationField = ctx.helper.modelToField({
         pictureId: picture.id,
-        mainId: actor.actorId,
+        mainId: actor.pictureId,
+        updateAt: mysql.literals.now,
+        createAt: mysql.literals.now,
       });
     }
-
+    actor.createAt = mysql.literals.now;
+    actor.updateAt = mysql.literals.now;
     const actorField = ctx.helper.modelToField(actor);
-    Object.assign(actorField, {
-      CREATE_AT: mysql.literals.now,
-      UPDATE_AT: mysql.literals.now,
-    });
-
-    const result = await mysql.beginTransactionScope(async conn => {
-      await conn.insert(config.table.ACTORS, actorField);
-      if (!ctx.helper.isEmpty(pictureRealationField)) {
-        await conn.insert(config.table.PICTURE_RELATION, pictureRealationField);
+    const finalResult = {
+      status: false,
+      actorInsertId: '',
+    };
+    return await mysql.beginTransactionScope(async conn => {
+      let picVal = {};
+      const insertVal = await conn.insert(config.table.ACTORS, actorField);
+      if (!ctx.helper.isEmpty(picture.id)) {
+        picVal = await conn.insert(config.table.PICTURE_RELATION, pictureRelationField);
+        ctx.logger.debug('[ActorService][insertActor] msg--> insert actor and pic_relation success');
       }
-      ctx.logger.debug('[ActorService][insertActor] msg--> insert actor and pic_relation success');
-      return { success: true };
+      if (picVal.affectedRows === 1 || insertVal.affectedRows === 1) {
+        finalResult.status = true;
+        finalResult.actorInsertId = insertVal.insertId;
+      } else {
+        ctx.logger.warn('[ActorService][insertActor] msg--> insert actor or PICTURE_RELATION fail');
+      }
+      return finalResult;
     }, ctx);
-    return result.success;
+  }
+
+  /**
+   * 删除演员
+   * @param {id,picture} params 演员的图片id和pictureId
+   * @return {Promise<boolean|*>}
+   */
+  async deleteActor({ id, pictureId }) {
+    const { ctx, app: { mysql }, config } = this;
+    cacheTotal = null;
+    if (ctx.helper.isEmpty(id)) {
+      return new Promise(resolve => {
+        ctx.logger.warn('[ActorService][deleteActor] msg--> actorId is empty');
+        resolve({
+          status: false,
+        });
+      });
+    }
+    return await mysql.beginTransactionScope(async conn => {
+      await conn.delete(config.table.ACTORS, {
+        ID: id,
+      });
+      if (!ctx.helper.isEmpty(pictureId)) {
+        const sql = `DELETE FROM ${config.table.PICTURE} WHERE ID IN 
+        (SELECT PICTURE_ID FROM ${config.table.PICTURE_RELATION}  WHERE MAIN_ID = ${mysql.escape(pictureId)})`;
+        ctx.logger.debug('[ActorService][deleteActor] sql-->', sql);
+        await conn.query(sql);
+        await conn.delete(config.table.PICTURE_RELATION, {
+          MAIN_ID: pictureId,
+        });
+      }
+      return {
+        status: true,
+      };
+    }, ctx);
   }
 
 
-  async getActors({ size, num, whereOpt }) {
+  /**
+   * 修改actor
+   * @param actor
+   * @param picture
+   * @return {Promise<*>}
+   */
+  async updateActor({ actor, picture }) {
+    const { ctx, app: { mysql }, config } = this;
+    actor.updateAt = mysql.literals.now;
+    actor = ctx.helper.modelToField(actor);
+    cacheTotal = null;
+    if (!ctx.helper.isEmpty(picture)) {
+      picture.updateAt = mysql.literals.now;
+      picture = ctx.helper.modelToField(picture);
+    }
+    return await mysql.beginTransactionScope(async conn => {
+      await conn.update(config.table.ACTORS, actor);
+      await conn.update(config.table.PICTURE, picture);
+      const queryAndUpdateSql = `UPDATE ${config.table.PICTURE_RELATION} 
+                                 SET 
+                                 PICTURE_ID=${mysql.escape(picture.ID)}, MAIN_ID=${mysql.escape(actor.ID)}
+                                 WHERE ID IN (SELECT ID FROM ${config.table.PICTURE_RELATION} WHERE MAIN_ID=${mysql.escape(actor.ID)})
+                                 `;
+      await conn.query(queryAndUpdateSql);
+      ctx.logger.info('[ActorService][updateActor] msg--> update table actor|picture|pictureRelation');
+      return {
+        status: true,
+      };
+    }, ctx);
+  }
+
+  /**
+   * 查询
+   * @param size
+   * @param num
+   * @param queryCase
+   * @returns {Promise<Promise<*|Promise<any>>|*>}
+   */
+  async getActors({ size, num, queryCase }) {
+    const { ctx, app: { mysql }, config } = this;
     const pageSize = size || 10,
       pageNumber = num || 1;
-    const { ctx, app: { mysql }, config } = this;
     const offset = (pageNumber - 1) * pageSize;
     const countSql = `SELECT COUNT(1) FROM ${config.table.ACTORS}`;
     let sql = ctx.helper.selectColumns({
       table: config.table.ACTORS,
-      mapColumns: [ 'id', 'name', 'introduce', 'createAt', 'updateAt', 'actorId' ],
+      mapColumns: [
+        'id',
+        'name',
+        'introduce',
+        'createAt',
+        'updateAt',
+        'pictureId',
+      ],
     });
-    if (ctx.helper.isEmpty(whereOpt)) {
+    if (ctx.helper.isEmpty(queryCase)) {
       sql += mysql._limit(+size, +offset);
       ctx.logger.debug('[ActorService][getActor] sql-->', sql);
-      const result = await mysql.beginTransactionScope(async conn => {
+      return await mysql.beginTransactionScope(async conn => {
         const items = await conn.query(sql);
         if (ctx.helper.isEmpty(cacheTotal)) {
           const total = await conn.query(countSql);
@@ -61,74 +149,18 @@ class ActorSerivce extends Service {
           total: cacheTotal,
         };
       }, ctx);
-      return result;
     }
-
-    sql += mysql._where(whereOpt);
+    queryCase = ctx.helper.modelToField(queryCase);
+    sql += mysql._where(queryCase);
     ctx.logger.debug('[ActorService][getActor] sql-->', sql);
-    return await mysql.query(sql);
-  }
-
-
-  async getActorContainPicture(size = 10, num = 1, queryOpt) {
-    const { ctx, app: { mysql }, config } = this;
-    const offset = (num - 1) * size;
-    let sql = ctx.helper.selectColumns(
-      {
-        table: config.table.ACTORS,
-        mapColumns: [ 'id', 'name', 'introduce', 'actorId', 'createAt', 'updateAt' ],
-      }, {
-        table: config.table.PICTURE,
-        mapColumns: [ 'type', 'url' ],
-      }, {
-        table: config.table.PICTURE_RELATION,
+    return new Promise(async resolve => {
+      const items = await mysql.query(sql);
+      resolve({
+        items,
       });
-    const equal = {};
-    equal[`${config.table.ACTORS}.ACTOR_ID`] = `${config.table.PICTURE_RELATION}.MAIN_ID`;
-    equal[`${config.table.PICTURE}.ID`] = `${config.table.PICTURE_RELATION}.PICTURE_ID`;
-    sql += ctx.helper.whereMultiTable({
-      equal,
     });
-    if (ctx.helper.isEmpty(queryOpt)) {
-      sql += mysql._limit(size, offset);
-      ctx.logger.debug('[ActorService][getActor] sql-->', sql);
-      const result = await mysql.query(sql);
-      return result;
-    }
-    mysql._where(queryOpt.where);
-    ctx.logger.debug('[ActorService][getActor] sql-->', sql);
-    const result = await mysql.query(sql);
-    return result;
   }
-
-  async deleteActor({ id, actorId }) {
-    const { ctx, app: { mysql }, config } = this;
-    if (ctx.helper.isEmpty(actorId)) {
-      return false;
-    }
-    const result = await mysql.beginTransactionScope(async conn => {
-      await conn.delete(config.table.ACTORS, {
-        ID: id,
-      });
-
-      if (!ctx.helper.isEmpty(actorId)) {
-        const sql = `DELETE FROM ${config.table.PICTURE} 
-                     WHERE ID 
-                     IN 
-                     (SELECT PICTURE_ID FROM ${config.table.PICTURE_RELATION}  WHERE MAIN_ID=${mysql.escape(actorId)})`;
-        ctx.logger.debug('[ActorService][deleteActor] sql-->', sql);
-        await conn.query(sql);
-        await conn.delete(config.table.PICTURE_RELATION, {
-          MAIN_ID: actorId,
-        });
-      }
-      return true;
-    }, ctx);
-
-    return result;
-  }
-
 }
 
 
-module.exports = ActorSerivce;
+module.exports = ActorService;

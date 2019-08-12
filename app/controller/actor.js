@@ -5,19 +5,47 @@ const Controller = require('./base_controller');
 class ActorController extends Controller {
   async index() {
     const { ctx, ctx: { request } } = this;
-    const getActorOption = {};
-    if (!(ctx.helper.isEmpty(request.query.pageNumber) || ctx.helper.isEmpty(request.query.pageSize))) {
-      getActorOption.num = request.query.pageNumber;
-      getActorOption.size = request.query.pageSize;
-    } else if (!ctx.helper.isEmpty(request.query.actorId)) {
-      getActorOption.whereOpt = {
-        ACTOR_ID: request.query.actorId,
-      };
-    }
+    this.validate({
+      pageNumber: {
+        type: 'string',
+        require: false,
+      },
+      pageSize: {
+        type: 'string',
+        require: false,
+      },
+    }, request.query);
     const items = await ctx.service.actor
-      .getActors(getActorOption);
+      .getActors({
+        num: request.query.pageNumber,
+        size: request.query.pageSize,
+      });
     this.success(items);
 
+  }
+
+  async show() {
+    const { ctx, ctx: { params } } = this;
+    const { id } = params;
+    const items = await ctx.service.actor.getActors({
+      whereOpt: {
+        ACTOR_ID: id,
+      },
+    });
+    this.success(items);
+  }
+
+  async update() {
+
+  }
+
+  async destroy() {
+    const { ctx, ctx: { params, request: { body } } } = this;
+    await ctx.service.actor.deleteActor({
+      id: params.id,
+      actorId: body.actorId,
+    });
+    return this.success(params.id);
   }
 
   async create() {
@@ -46,14 +74,16 @@ class ActorController extends Controller {
         id: ctx.request.body.imageId,
       },
     });
-    if (insertResult) {
+    if (insertResult.status) {
       this.success({
-        message: 'insert actor succeed',
+        topicId: insertResult.inserId,
       });
     } else {
       this.fail(500, 'insert actor fail');
     }
   }
+
+
 }
 
 module.exports = ActorController;
