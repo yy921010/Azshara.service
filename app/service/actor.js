@@ -11,7 +11,7 @@ class ActorService extends Service {
     const { ctx, app: { mysql }, config } = this;
     cacheTotal = null;
     let pictureRelationField = {};
-    if (!ctx.helper.isEmpty(picture.id)) {
+    if (!picture.id) {
       actor.pictureId = ctx.helper.randamStr();
       pictureRelationField = ctx.helper.modelToField({
         pictureId: picture.id,
@@ -30,7 +30,7 @@ class ActorService extends Service {
     return await mysql.beginTransactionScope(async conn => {
       let picVal = {};
       const insertVal = await conn.insert(config.table.ACTORS, actorField);
-      if (!ctx.helper.isEmpty(picture.id)) {
+      if (picture.id) {
         picVal = await conn.insert(config.table.PICTURE_RELATION, pictureRelationField);
         ctx.logger.debug('[ActorService][insertActor] msg--> insert actor and pic_relation success');
       }
@@ -52,7 +52,7 @@ class ActorService extends Service {
   async deleteActor({ id, pictureId }) {
     const { ctx, app: { mysql }, config } = this;
     cacheTotal = null;
-    if (ctx.helper.isEmpty(id)) {
+    if (!id) {
       return new Promise(resolve => {
         ctx.logger.warn('[ActorService][deleteActor] msg--> actorId is empty');
         resolve({
@@ -64,7 +64,7 @@ class ActorService extends Service {
       await conn.delete(config.table.ACTORS, {
         ID: id,
       });
-      if (!ctx.helper.isEmpty(pictureId)) {
+      if (pictureId) {
         const sql = `DELETE FROM ${config.table.PICTURE} WHERE ID IN 
         (SELECT PICTURE_ID FROM ${config.table.PICTURE_RELATION}  WHERE MAIN_ID = ${mysql.escape(pictureId)})`;
         ctx.logger.debug('[ActorService][deleteActor] sql-->', sql);
@@ -116,7 +116,7 @@ class ActorService extends Service {
    * @param size
    * @param num
    * @param queryCase
-   * @returns {Promise<Promise<*|Promise<any>>|*>}
+   * @return {Promise<Promise<*|Promise<any>>|*>}
    */
   async getActors({ size, num, queryCase }) {
     const { ctx, app: { mysql }, config } = this;
