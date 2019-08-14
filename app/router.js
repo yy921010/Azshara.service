@@ -9,5 +9,5 @@ module.exports = app => {
   router.post('/image', controller.image.index);
   router.delete('/image', controller.image.deleteImage);
   router.resources('actor', `/${app.config.apiVersions}/actor`, controller.actor);
-
+  router.resources('video', `/${app.config.apiVersions}/video`, controller.video);
 };
