@@ -82,24 +82,23 @@ class ActorService extends Service {
 
   /**
    * 修改actor
-   * @param actor
-   * @param picture
+   * @param {actor, picture} params
    * @return {Promise<*>}
    */
   async updateActor({ actor, picture }) {
     const { ctx, app: { mysql }, config } = this;
     actor.updateAt = mysql.literals.now;
-    actor = ctx.helper.modelToField(actor,true);
+    actor = ctx.helper.modelToField(actor, true);
     cacheTotal = null;
     if (!ctx.helper.isEmpty(picture)) {
       picture.updateAt = mysql.literals.now;
-      picture = ctx.helper.modelToField(picture,true);
+      picture = ctx.helper.modelToField(picture, true);
     }
     return await mysql.beginTransactionScope(async conn => {
       await conn.update(config.table.ACTORS, actor);
-      if(picture){
-await conn.update(config.table.PICTURE, picture);
-}
+      if (picture) {
+        await conn.update(config.table.PICTURE, picture);
+      }
       ctx.logger.info('[ActorService][updateActor] msg--> update table actor|picture');
       return {
         status: true,
@@ -109,9 +108,7 @@ await conn.update(config.table.PICTURE, picture);
 
   /**
    * 查询
-   * @param size
-   * @param num
-   * @param queryCase
+   * @param {size, num, queryCase}params
    * @return {Promise<Promise<*|Promise<any>>|*>}
    */
   async getActors({ size, num, queryCase }) {

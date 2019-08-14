@@ -50,8 +50,9 @@ module.exports = {
   /**
    * 将model的key 转换为大写
    * @param {object} modelMap model类型
+   * @param isRetainId 是否保留id 字段
    */
-  modelToField(modelMap = {},isRetainId) {
+  modelToField(modelMap = {}, isRetainId) {
     if (this.isEmpty(modelMap)) {
       return;
     }
@@ -61,10 +62,10 @@ module.exports = {
       const resultKey = this.toUpperCaseKey(key);
       tempMap[resultKey] = modelMap[key];
     });
-    if(isRetainId){
-     tempMap.id = tempMap.ID;
+    if (isRetainId) {
+      tempMap.id = tempMap.ID;
       delete tempMap.ID;
-      }
+    }
     modelMap = {};
     return tempMap;
   },
@@ -206,7 +207,7 @@ module.exports = {
    */
   deleteFileByName(name, pathName) {
     let files = [];
-    let isScuess = false;
+    let isSuccess = false;
     // 判断给定的路径是否存在
     if (fs.existsSync(pathName)) {
       // 返回文件和子目录的数组
@@ -220,7 +221,7 @@ module.exports = {
           // 是指定文件，则删除
           if (file.indexOf(name) > -1) {
             fs.unlinkSync(curPath);
-            isScuess = true;
+            isSuccess = true;
             this.logger.info(' [helper] [deleteFileByName] msg--> delete success');
           }
         }
@@ -229,14 +230,14 @@ module.exports = {
     } else {
       this.logger.warn('[helper] [deleteDir] msg--> the path is not found');
     }
-    return isScuess;
+    return isSuccess;
   },
 
-  randamStr(randamLength = 36) {
+  randamStr(randomLength = 36) {
     const randamArrs = [],
       strDec = '0123456789abcdefghijklmnopqrstuvwxyz';
 
-    for (let i = 0; i < randamLength; i++) {
+    for (let i = 0; i < randomLength; i++) {
       randamArrs[i] = strDec.substr(Math.floor(16 * Math.random()), 1);
     }
     randamArrs[14] = '4';

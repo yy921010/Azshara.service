@@ -8,7 +8,6 @@ module.exports = app => {
   router.get('/', controller.home.index);
   router.post('/image', controller.image.index);
   router.delete('/image', controller.image.deleteImage);
-
-  router.resources('actor', '/actor', controller.actor);
+  router.resources('actor', `/${app.config.apiVersions}/actor`, controller.actor);
 
 };

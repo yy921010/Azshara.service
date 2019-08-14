@@ -16,11 +16,15 @@ module.exports = appInfo => {
   config.keys = appInfo.name + '_1562769362441_5869';
 
   // add your middleware config here
-  config.middleware = [];
+  config.middleware = [ 'errorHandler' ];
+  config.errorHandler = {
+    match: '/v1',
+  };
 
   // add your user config here
   const userConfig = {
     // myAppName: 'egg',
+    apiVersions: 'v1',
   };
 
   config.logger = {

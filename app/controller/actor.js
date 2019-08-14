@@ -1,42 +1,38 @@
 'use strict';
 
 const Controller = require('./base_controller');
+const actorRule = require('../validate/actor_rule');
 
 class ActorController extends Controller {
   async index() {
     const { ctx, ctx: { request } } = this;
-    this.validate({
-      pageNumber: {
-        type: 'string',
-        require: false,
-      },
-      pageSize: {
-        type: 'string',
-        require: false,
-      },
-    }, request.query);
+    ctx.validate(actorRule.query, request.query);
     const items = await ctx.service.actor
       .getActors({
         num: request.query.pageNumber,
         size: request.query.pageSize,
       });
     this.success(items);
-
   }
 
   async show() {
     const { ctx, ctx: { params } } = this;
     const { id } = params;
-    const items = await ctx.service.actor.getActors({
-      whereOpt: {
-        ACTOR_ID: id,
-      },
+    const item = await ctx.service.actor.getActors({
+      id,
     });
-    this.success(items);
+    this.success(item);
   }
 
   async update() {
-
+    const { ctx, ctx: { params, request: { body } } } = this;
+    const { actor, picture } = body;
+    const { id } = params;
+    actor.id = id;
+    const { status } = await ctx.service.updateActor({ actor, picture });
+    if (status) {
+      this.success({});
+    }
   }
 
   async destroy() {
@@ -50,21 +46,7 @@ class ActorController extends Controller {
 
   async create() {
     const { ctx } = this;
-    this.validate({
-      name: {
-        type: 'string',
-        required: false,
-      },
-      introduce: {
-        type: 'string',
-        required: false,
-      },
-      imageId: {
-        type: 'string',
-        required: false,
-      },
-    }, ctx.request.body);
-
+    ctx.validate(actorRule.insert, ctx.request.body);
     const insertResult = await ctx.service.actor.insertActor({
       actor: {
         name: ctx.request.body.name,
@@ -76,7 +58,7 @@ class ActorController extends Controller {
     });
     if (insertResult.status) {
       this.success({
-        topicId: insertResult.inserId,
+        topicId: insertResult.actorInsertId,
       });
     } else {
       this.fail(500, 'insert actor fail');
