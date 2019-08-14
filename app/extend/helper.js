@@ -51,7 +51,7 @@ module.exports = {
    * 将model的key 转换为大写
    * @param {object} modelMap model类型
    */
-  modelToField(modelMap = {}) {
+  modelToField(modelMap = {},isRetainId) {
     if (this.isEmpty(modelMap)) {
       return;
     }
@@ -61,6 +61,10 @@ module.exports = {
       const resultKey = this.toUpperCaseKey(key);
       tempMap[resultKey] = modelMap[key];
     });
+    if(isRetainId){
+     tempMap.id = tempMap.ID;
+      delete tempMap.ID;
+      }
     modelMap = {};
     return tempMap;
   },
