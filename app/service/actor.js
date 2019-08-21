@@ -11,7 +11,7 @@ class ActorService extends Service {
     const { ctx, app: { mysql }, config } = this;
     cacheTotal = null;
     let pictureRelationField = {};
-    if (!picture.id) {
+    if (picture.id) {
       actor.pictureId = ctx.helper.randamStr();
       pictureRelationField = ctx.helper.modelToField({
         pictureId: picture.id,

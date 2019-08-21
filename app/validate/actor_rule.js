@@ -4,10 +4,12 @@ module.exports = {
     pageNumber: {
       type: 'string',
       require: false,
+      default: '1',
     },
     pageSize: {
       type: 'string',
       require: false,
+      default: '20',
     },
   },
   insert: {

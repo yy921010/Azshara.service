@@ -13,7 +13,14 @@ class VideoController extends Controller {
       });
     this.success(items);
   }
-  async show() {}
+  async show() {
+    const { ctx, ctx: { params } } = this;
+    const { id } = params;
+    const item = await ctx.service.actor.getVideos({
+      id,
+    });
+    this.success(item);
+  }
   async create() {}
   async update() {}
 }

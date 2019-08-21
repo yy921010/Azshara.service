@@ -7,18 +7,16 @@ module.exports = class ImageService extends Service {
     const { app: { mysql }, ctx, config } = this;
     ctx.logger.debug('[imageService] [saveImage] enter');
     image = ctx.helper.modelToField(image);
-    const result = await mysql.insert(config.table.PICTURE, image);
-    return result;
+    return await mysql.insert(config.table.PICTURE, image);
   }
 
 
   async deleteImage(imageId) {
     const { app: { mysql }, ctx, config } = this;
     ctx.logger.debug('[imageService] [deleteImage] enter');
-    const result = await mysql.delete(config.table.PICTURE, {
+    return await mysql.delete(config.table.PICTURE, {
       ID: imageId,
     });
-    return result;
   }
 
   async getImageWithMainId(mainId = '') {
@@ -41,7 +39,6 @@ module.exports = class ImageService extends Service {
       equal,
       query,
     });
-    console.log(sql);
     return await mysql.query(sql);
   }
 };

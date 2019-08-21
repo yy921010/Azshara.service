@@ -177,7 +177,7 @@ module.exports = {
    */
   deleteDir(pathName) {
     let files = [];
-    let isScuess = false;
+    let isSuccess = false;
     // 判断给定的路径是否存在
     if (fs.existsSync(pathName)) {
       // 返回文件和子目录的数组
@@ -194,11 +194,11 @@ module.exports = {
       });
       // 清除文件夹
       fs.rmdirSync(pathName);
-      isScuess = true;
+      isSuccess = true;
     } else {
       this.logger.warn('[helper] [deleteDir] msg--> the path is not found');
     }
-    return isScuess;
+    return isSuccess;
   },
   /**
    * 根据文件名删除
