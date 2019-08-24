@@ -61,6 +61,44 @@ class DefinitionService extends Service {
       status: deleteResult.affectedRows === 1,
     };
   }
+
+  async find({ size, num }) {
+    const { ctx, app: { mysql }, config } = this;
+    const pageSize = size || 10,
+      pageNumber = num || 1;
+    const offset = (pageNumber - 1) * pageSize;
+    const countSql = `SELECT COUNT(1) FROM ${config.table.DEFINITION}`;
+    let sql = ctx.helper.selectColumns({
+      table: config.table.DEFINITION,
+      mapColumns: [ 'url', 'type' ],
+    });
+    sql += mysql._limit(+size, +offset);
+    return await mysql.beginTransactionScope(async conn => {
+      const items = await conn.query(sql);
+      const total = await conn.query(countSql);
+      return {
+        items,
+        total: total[0]['COUNT(1)'],
+      };
+    });
+  }
+
+  async findByContentId(contentId) {
+    const { ctx, app: { mysql }, config } = this;
+    let sql = ctx.helper.selectColumns({
+      table: config.table.DEFINITION,
+      mapColumns: [ 'url', 'type' ],
+    }, {
+      table: config.table.CONTENT_DEFINITION,
+    });
+    const equal = {};
+    equal[`${config.table.DEFINITION}.ID`] = `${config.table.CONTENT_DEFINITION}.DEFINITION_ID`;
+    const query = {};
+    query.CONTENT_ID = contentId;
+    sql += ctx.helper.whereMultiTable(query, equal);
+    ctx.logger.debug('[DefinitionService][findByContentId] sql-->', sql);
+    return await mysql.query(sql);
+  }
 }
 
 module.exports = DefinitionService;

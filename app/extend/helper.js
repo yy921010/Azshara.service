@@ -80,7 +80,7 @@ module.exports = {
     return modelMaps.length > 0 ? modelMaps.map(item => this.modelToField(item)) : [];
   },
 
-  mapColummField(mapColumns = [], table) {
+  mapColumnField(mapColumns = [], table) {
     if (this.isEmpty(mapColumns) || this.isEmpty(table)) {
       return '';
     }
@@ -97,7 +97,7 @@ module.exports = {
     const queryCaseArrs = queryFields
       .map(queryField => {
         return this.isEmpty(queryField.mapColumns) ?
-          '' : this.mapColummField(queryField.mapColumns, queryField.table);
+          '' : this.mapColumnField(queryField.mapColumns, queryField.table);
       })
       .filter(a => a)
       .toString();
@@ -113,7 +113,7 @@ module.exports = {
    *
    * @param {equalCase,queryCase} option
    */
-  whereMultiTable({ equal, query }) {
+  whereMultiTable(equal, query) {
     if (this.isEmpty(equal)) {
       this.logger.warn('[helper][whereMultiTable] msg--> equalField is Empty');
       return '';

@@ -1,12 +1,12 @@
 'use strict';
 
 const Controller = require('./base_controller');
-const actorRule = require('../validate/actor_rule');
+const validateRule = require('../validate/validate_rules');
 
 class ActorController extends Controller {
   async index() {
     const { ctx, ctx: { request } } = this;
-    ctx.validate(actorRule.query, request.query);
+    ctx.validate(validateRule.query, request.query);
     const items = await ctx.service.actor
       .getActors({
         num: request.query.pageNumber,
@@ -46,7 +46,7 @@ class ActorController extends Controller {
 
   async create() {
     const { ctx } = this;
-    ctx.validate(actorRule.insert, ctx.request.body);
+    ctx.validate(validateRule.actor.insert, ctx.request.body);
     const insertResult = await ctx.service.actor.insertActor({
       actor: {
         name: ctx.request.body.name,

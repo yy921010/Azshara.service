@@ -62,5 +62,28 @@ class GenresService extends Service {
       status: deleteResult.affectedRows === 1,
     };
   }
+
+
+  async find({ size, num }) {
+    const { ctx, app: { mysql }, config } = this;
+    const pageSize = size || 10,
+      pageNumber = num || 1;
+    const offset = (pageNumber - 1) * pageSize;
+    const countSql = `SELECT COUNT(1) FROM ${config.table.GENRES}`;
+    let sql = ctx.helper.selectColumns({
+      table: config.table.GENRES,
+      mapColumns: [ 'name' ],
+    });
+    sql += mysql._limit(+size, +offset);
+    return await mysql.beginTransactionScope(async conn => {
+      const items = await conn.query(sql);
+      const total = await conn.query(countSql);
+      return {
+        items,
+        total: total[0]['COUNT(1)'],
+      };
+    });
+
+  }
 }
 module.exports = GenresService;
