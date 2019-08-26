@@ -19,7 +19,9 @@ class ActorController extends Controller {
     const { ctx, ctx: { params } } = this;
     const { id } = params;
     const item = await ctx.service.actor.getActors({
-      id,
+      queryCase: {
+        id,
+      },
     });
     this.success(item);
   }

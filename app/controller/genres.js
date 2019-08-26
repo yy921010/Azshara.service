@@ -27,7 +27,6 @@ class GenresController extends Controller {
     });
     return status ? this.success({}) : this.fail(500, '更新失败');
 
-
   }
 
   async destroy() {
