@@ -237,11 +237,12 @@ class VideoService extends Service {
     getContentIdSql += mysql._where({
       ID: id,
     });
-    ctx.logger.debug('[ActorService][delete] sql-->', getContentIdSql);
+    ctx.logger.debug('[videoService][delete] sql-->', getContentIdSql);
     return await mysql.beginTransactionScope(async conn => {
       const selectContentIds = await conn.query(getContentIdSql);
+      ctx.logger.debug('[videoService][delete] selectContentIds-->', selectContentIds[0].contentId);
       if (selectContentIds.length > 0) {
-        const contentId = selectContentIds[0];
+        const contentId = selectContentIds[0].contentId;
         const deleteCase = ctx.helper.modelToField({
           contentId,
         });
@@ -265,6 +266,10 @@ class VideoService extends Service {
 
         await conn.delete(config.table.PICTURE_RELATION, {
           MAIN_ID: contentId,
+        });
+
+        await conn.delete(config.table.CONTENT, {
+          ID: id,
         });
 
         return {

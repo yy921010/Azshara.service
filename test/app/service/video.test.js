@@ -55,4 +55,11 @@ describe('test/app/service/video.test.js', () => {
     assert(result.status === true);
   });
 
+  it('result delete success for multiple', async () => {
+    const ctx = app.mockContext();
+    const result = await ctx.service.video.delete(30);
+    assert(result.status === true);
+  });
+
+
 });
