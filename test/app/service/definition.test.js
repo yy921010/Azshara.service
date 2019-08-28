@@ -24,22 +24,4 @@ describe('test/app/service/definition.test.js', () => {
     assert(result.status === false);
   });
 
-
-  it('test update result true', async () => {
-    const ctx = app.mockContext();
-    const result = await ctx.service.definition.update({
-      id: 1,
-      url: 'test_update',
-      type: 5,
-    });
-    assert(result.status === true);
-  });
-
-
-  it('test delete result true', async () => {
-    const ctx = app.mockContext();
-    const result = await ctx.service.definition.delete(1);
-    assert(result.status === true);
-  });
-
 });

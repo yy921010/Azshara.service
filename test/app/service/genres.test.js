@@ -32,11 +32,4 @@ describe('test/app/service/genres.test.js', () => {
     assert(result.status === true);
   });
 
-
-  it('test delete result true', async () => {
-    const ctx = app.mockContext();
-    const result = await ctx.service.genres.delete(1);
-    assert(result.status === true);
-  });
-
 });

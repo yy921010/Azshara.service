@@ -25,7 +25,6 @@ class VideoService extends Service {
         'introduce',
         'createAt',
         'updateAt',
-        'pictureId',
       ],
     });
     if (ctx.helper.isEmpty(queryCase)) {
@@ -227,6 +226,59 @@ class VideoService extends Service {
 
   async delete(id) {
     // 先查询关联的contentId
+    const { ctx, app: { mysql }, config } = this;
+    let getContentIdSql = ctx.helper.selectColumns({
+      table: config.table.CONTENT,
+      mapColumns: [
+        'contentId',
+      ],
+    });
+
+    getContentIdSql += mysql._where({
+      ID: id,
+    });
+    ctx.logger.debug('[ActorService][delete] sql-->', getContentIdSql);
+    return await mysql.beginTransactionScope(async conn => {
+      const selectContentIds = await conn.query(getContentIdSql);
+      if (selectContentIds.length > 0) {
+        const contentId = selectContentIds[0];
+        const deleteCase = ctx.helper.modelToField({
+          contentId,
+        });
+
+        const deleteDefinitionSql = `DELETE FROM ${config.table.DEFINITION} 
+        WHERE ID IN (SELECT DEFINITION_ID FROM ${config.table.CONTENT_DEFINITION} WHERE CONTENT_ID=${mysql.escape(contentId)})`;
+        await conn.query(deleteDefinitionSql);
+
+        const deletePictureSql = `DELETE FROM ${config.table.PICTURE} 
+        WHERE ID IN (SELECT PICTURE_ID FROM ${config.table.PICTURE_RELATION} WHERE MAIN_ID=${mysql.escape(contentId)})`;
+        await conn.query(deletePictureSql);
+
+        ctx.logger.debug('[ActorService][delete] msg-->', 'delete contentActors');
+        await conn.delete(config.table.CONTENT_ACTORS, deleteCase);
+
+        ctx.logger.debug('[ActorService][delete] msg-->', 'delete contentDefinition');
+        await conn.delete(config.table.CONTENT_DEFINITION, deleteCase);
+
+        ctx.logger.debug('[ActorService][delete] msg-->', 'delete contentGenres');
+        await conn.delete(config.table.CONTENT_GENRES, deleteCase);
+
+        await conn.delete(config.table.PICTURE_RELATION, {
+          MAIN_ID: contentId,
+        });
+
+        return {
+          status: true,
+        };
+
+      }
+      ctx.logger.info('[ActorService][delete] msg-->', 'selectContentIds is empty');
+      return {
+        status: false,
+      };
+
+    });
+
   }
 
   assignTime(object) {

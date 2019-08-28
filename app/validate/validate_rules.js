@@ -34,7 +34,11 @@ module.exports = {
       },
     },
   },
+  video: {
+    content: {
 
+    },
+  },
   genre: {
     update: {
       name: {
