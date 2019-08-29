@@ -64,7 +64,7 @@ class VideoService extends Service {
     if (!ctx.helper.isEmpty(content)) {
       content.contentId = ctx.helper.randamStr();
       contentId = content.contentId;
-      contentId = this.assignTime(contentId);
+      content = this.assignTime(content);
       content = ctx.helper.modelToField(content);
       ctx.logger.debug('[videoService] [add] content-->', content);
     } else {
@@ -74,7 +74,7 @@ class VideoService extends Service {
       });
     }
     // 由于actors 已经存储好，因此只需要进行关系表连接
-    if (actors.length > 0) {
+    if (actors && actors.length > 0) {
       contentActorRelation = actors.map(actor => {
         const item = {
           contentId,
@@ -86,7 +86,7 @@ class VideoService extends Service {
       contentActorRelation = ctx.helper.modelToFields(contentActorRelation);
       ctx.logger.debug('[videoService] [add] contentActorRelation-->', contentActorRelation);
     }
-    if (definitions.length > 0) {
+    if (definitions && definitions.length > 0) {
       contentDefinitionsRelation = definitions.map(definition => {
         return this.assignTime({
           contentId,
@@ -96,7 +96,7 @@ class VideoService extends Service {
       contentDefinitionsRelation = ctx.helper.modelToFields(contentDefinitionsRelation);
       ctx.logger.debug('[videoService] [add] contentDefinitionsRelation-->', contentDefinitionsRelation);
     }
-    if (genres.length > 0) {
+    if (genres && genres.length > 0) {
       contentGenresRelation = genres.map(genre => {
         return this.assignTime({
           contentId,
@@ -106,7 +106,7 @@ class VideoService extends Service {
       contentGenresRelation = ctx.helper.modelToFields(contentGenresRelation);
       ctx.logger.debug('[videoService] [add] contentGenresRelation-->', contentGenresRelation);
     }
-    if (pictures.length > 0) {
+    if (pictures && pictures.length > 0) {
       contentPictureRelation = pictures.map(pic => {
         return this.assignTime({
           mainId: contentId,
@@ -144,6 +144,12 @@ class VideoService extends Service {
     });
   }
 
+
+  /**
+   * TODO: 未进行单元测试
+   * @param params
+   * @return {Promise<*|Promise<Promise<any>|*>>}
+   */
   async update({ content, pictures, actors, definitions, genres }) {
     const { ctx, app: { mysql }, config } = this;
     const result = {
@@ -157,8 +163,7 @@ class VideoService extends Service {
     }
     ctx.logger.debug('[videoService] [update] content-->', content);
 
-    if (pictures.length > 0) {
-
+    if (pictures && pictures.length > 0) {
       pictures = pictures.map(pic => ({
         updateAt: mysql.literals.now,
         pictureId: pic.id,
@@ -167,7 +172,7 @@ class VideoService extends Service {
       ctx.logger.debug('[videoService] [update] pictures-->', pictures);
     }
 
-    if (actors.length > 0) {
+    if (actors && actors.length > 0) {
       actors = actors.map(genre => ({
         updateAt: mysql.literals.now,
         genresId: genre.id,
@@ -176,7 +181,7 @@ class VideoService extends Service {
       ctx.logger.debug('[videoService] [update] actors-->', pictures);
     }
 
-    if (definitions.length > 0) {
+    if (definitions && definitions.length > 0) {
       definitions = definitions.map(definition => ({
         updateAt: mysql.literals.now,
         definitionId: definition.id,
@@ -185,7 +190,7 @@ class VideoService extends Service {
       ctx.logger.debug('[videoService] [update] definitions-->', definitions);
     }
 
-    if (genres.length > 0) {
+    if (genres && genres.length > 0) {
       genres = genres.map(genres => ({
         updateAt: mysql.literals.now,
         genresId: genres.id,
@@ -197,24 +202,40 @@ class VideoService extends Service {
 
     return await mysql.beginTransactionScope(async conn => {
       const contentResult = await conn.update(config.table.CONTENT, content);
-      if (contentResult.affectedRows <= 0) {
+      if (contentResult.affectedRows === 0) {
         ctx.logger.debug('[videoService] [update] [msg]--> update content fail');
         return {
           status: false,
         };
       }
 
-      if (genres.length > 0) {
-        await conn.update(config.table.CONTENT_GENRES, genres);
+      if (genres && genres.length > 0) {
+        await conn.update(config.table.CONTENT_GENRES, genres, {
+          where: {
+            CONTENT_ID: content.CONTENT_ID,
+          },
+        });
       }
-      if (definitions.length > 0) {
-        await conn.update(config.table.CONTENT_DEFINITION, definitions);
+      if (definitions && definitions.length > 0) {
+        await conn.update(config.table.CONTENT_DEFINITION, definitions, {
+          where: {
+            CONTENT_ID: content.CONTENT_ID,
+          },
+        });
       }
-      if (actors.length > 0) {
-        await conn.update(config.table.CONTENT_ACTORS, actors);
+      if (actors && actors.length > 0) {
+        await conn.update(config.table.CONTENT_ACTORS, actors, {
+          where: {
+            CONTENT_ID: content.CONTENT_ID,
+          },
+        });
       }
-      if (pictures.length > 0) {
-        await conn.update(config.table.PICTURE_RELATION, pictures);
+      if (pictures && pictures.length > 0) {
+        await conn.update(config.table.PICTURE_RELATION, pictures, {
+          where: {
+            MAIN_ID: content.CONTENT_ID,
+          },
+        });
       }
 
       return {
@@ -240,8 +261,8 @@ class VideoService extends Service {
     ctx.logger.debug('[videoService][delete] sql-->', getContentIdSql);
     return await mysql.beginTransactionScope(async conn => {
       const selectContentIds = await conn.query(getContentIdSql);
-      ctx.logger.debug('[videoService][delete] selectContentIds-->', selectContentIds[0].contentId);
-      if (selectContentIds.length > 0) {
+      if (selectContentIds && selectContentIds.length > 0) {
+        ctx.logger.debug('[videoService][delete] selectContentIds-->', selectContentIds[0].contentId);
         const contentId = selectContentIds[0].contentId;
         const deleteCase = ctx.helper.modelToField({
           contentId,

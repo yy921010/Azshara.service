@@ -17,10 +17,6 @@ describe('test/app/service/video.test.js', () => {
         type: 1,
         contentType: 2,
       },
-      pictures: [],
-      actors: [],
-      definitions: [],
-      genres: [],
     });
     assert(result.status === true);
   });
@@ -59,6 +55,18 @@ describe('test/app/service/video.test.js', () => {
     const ctx = app.mockContext();
     const result = await ctx.service.video.delete(30);
     assert(result.status === true);
+  });
+
+  it('result update for simple', async () => {
+    const ctx = app.mockContext();
+    const result = await ctx.service.video.update({
+      content: {
+        id: 15,
+        contentName: 'test_update',
+      },
+    });
+    assert(result.status === true);
+
   });
 
 
