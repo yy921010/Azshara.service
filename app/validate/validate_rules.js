@@ -3,18 +3,24 @@ module.exports = {
   query: {
     pageNumber: {
       type: 'string',
-      require: false,
+      required: false,
       default: '1',
     },
     pageSize: {
       type: 'string',
-      require: false,
+      required: false,
       default: '20',
     },
   },
   queryId: {
     id: {
       type: 'number',
+      required: false,
+    },
+  },
+  deleteId: {
+    id: {
+      type: 'string',
       required: false,
     },
   },

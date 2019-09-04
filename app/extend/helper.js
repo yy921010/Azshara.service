@@ -131,19 +131,20 @@ module.exports = {
     return sqlStr;
   },
   /**
-     * 创建初始化文件：upload, .temp
-     */
+   * 创建初始化文件：upload, .temp
+   */
   _makeUploadDir() {
     const { config: { upload: { baseDir } }, config: { upload } } = this;
-    Object.keys(upload).forEach(key => {
-      if ([ 'baseDir', 'imageService' ].includes(key)) {
-        return;
-      }
-      const dirPathName = path.join(this.config.baseDir, baseDir, key);
-      if (!fs.existsSync(dirPathName)) {
-        fs.mkdirSync(dirPathName);
-      }
-    });
+    Object.keys(upload)
+      .forEach(key => {
+        if ([ 'baseDir', 'imageService' ].includes(key)) {
+          return;
+        }
+        const dirPathName = path.join(this.config.baseDir, baseDir, key);
+        if (!fs.existsSync(dirPathName)) {
+          fs.mkdirSync(dirPathName);
+        }
+      });
   },
 
   getMkdirName(...fileNames) {
@@ -185,7 +186,8 @@ module.exports = {
       files.forEach(file => {
         const curPath = path.join(pathName, file);
         // 同步读取文件夹文件，如果是文件夹，则函数回调
-        if (fs.statSync(curPath).isDirectory()) {
+        if (fs.statSync(curPath)
+          .isDirectory()) {
           this.deleteDir(curPath);
         } else {
           // 是指定文件，则删除
@@ -205,7 +207,12 @@ module.exports = {
    * @param {string} name
    * @param {string} pathName
    */
-  deleteFileByName(name, pathName) {
+  deleteFileByName(fileName) {
+    const name = fileName.split('/')
+      .pop();
+    const prePathName = fileName.replace(/[^\/]*$/, '');
+    console.log(this.config.upload);
+    const pathName = path.join(this.config.baseDir, this.config.upload.baseDir, prePathName);
     let files = [];
     let isSuccess = false;
     // 判断给定的路径是否存在
@@ -215,7 +222,8 @@ module.exports = {
       files.forEach(file => {
         const curPath = path.join(pathName, file);
         // 同步读取文件夹文件，如果是文件夹，则函数回调
-        if (fs.statSync(curPath).isDirectory()) {
+        if (fs.statSync(curPath)
+          .isDirectory()) {
           this.deleteFileByName(curPath, name);
         } else {
           // 是指定文件，则删除

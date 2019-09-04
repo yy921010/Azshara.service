@@ -4,6 +4,7 @@ const Controller = require('./base_controller');
 const validateRule = require('../validate/validate_rules');
 
 class ActorController extends Controller {
+
   async index() {
     const { ctx, ctx: { request } } = this;
     ctx.validate(validateRule.query, request.query);
@@ -31,7 +32,7 @@ class ActorController extends Controller {
     const { actor, picture } = body;
     const { id } = params;
     actor.id = id;
-    const { status } = await ctx.service.updateActor({ actor, picture });
+    const { status } = await ctx.service.actor.updateActor({ actor, picture });
     if (status) {
       this.success({});
     }
@@ -41,7 +42,7 @@ class ActorController extends Controller {
     const { ctx, ctx: { params, request: { body } } } = this;
     await ctx.service.actor.deleteActor({
       id: params.id,
-      actorId: body.actorId,
+      pictureId: body.pictureId,
     });
     return this.success(params.id);
   }
