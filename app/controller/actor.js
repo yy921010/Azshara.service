@@ -7,6 +7,7 @@ class ActorController extends Controller {
 
   async index() {
     const { ctx, ctx: { request } } = this;
+    ctx.logger.debug('[ActorController][index] [msg]--> enter');
     ctx.validate(validateRule.query, request.query);
     const items = await ctx.service.actor
       .getActors({
@@ -18,6 +19,7 @@ class ActorController extends Controller {
 
   async show() {
     const { ctx, ctx: { params } } = this;
+    ctx.logger.debug('[ActorController][show] [msg]--> enter');
     const { id } = params;
     const item = await ctx.service.actor.getActors({
       queryCase: {
@@ -29,6 +31,7 @@ class ActorController extends Controller {
 
   async update() {
     const { ctx, ctx: { params, request: { body } } } = this;
+    ctx.logger.debug('[ActorController][update] [msg]--> enter');
     const { actor, pictureId } = body;
     ctx.validate({
       introduce: {
@@ -53,17 +56,17 @@ class ActorController extends Controller {
   }
 
   async destroy() {
-    const { ctx, ctx: { params, request: { body } } } = this;
-    await ctx.service.actor.deleteActor({
-      id: params.id,
-      pictureId: body.pictureId,
-    });
+    const { ctx, ctx: { params } } = this;
+    ctx.logger.debug('[ActorController][destroy] [msg]--> enter');
+    await ctx.service.actor.deleteActor(params.id);
     return this.success(params.id);
   }
 
   async create() {
     const { ctx } = this;
+    ctx.logger.debug('[ActorController][create] [msg]--> enter');
     ctx.validate(validateRule.actor.insert, ctx.request.body);
+    ctx.logger.debug('[ActorController][destroy] [body]-->', ctx.request.body);
     const insertResult = await ctx.service.actor.insertActor({
       actor: {
         name: ctx.request.body.name,

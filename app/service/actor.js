@@ -9,8 +9,11 @@ class ActorService extends Service {
    */
   async insertActor({ actor, picture }) {
     const { ctx, app: { mysql }, config } = this;
+    ctx.logger.debug('[ActorService][insertActor] [mgs]--> enter');
     cacheTotal = null;
     let pictureRelationField = {};
+    actor.createAt = mysql.literals.now;
+    actor.updateAt = mysql.literals.now;
     if (picture.id) {
       actor.pictureId = ctx.helper.randamStr();
       pictureRelationField = ctx.helper.modelToField({
@@ -20,13 +23,13 @@ class ActorService extends Service {
         createAt: mysql.literals.now,
       });
     }
-    actor.createAt = mysql.literals.now;
-    actor.updateAt = mysql.literals.now;
+    ctx.logger.debug('[ActorService][insertActor] pictureRelationField-->', pictureRelationField);
     const actorField = ctx.helper.modelToField(actor);
     const finalResult = {
       status: false,
       actorInsertId: '',
     };
+    ctx.logger.debug('[ActorService][insertActor] actorField-->', actorField);
     return await mysql.beginTransactionScope(async conn => {
       let picVal = {};
       const insertVal = await conn.insert(config.table.ACTORS, actorField);
@@ -49,30 +52,45 @@ class ActorService extends Service {
    * @param {id,picture} params 演员的图片id和pictureId
    * @return {Promise<boolean|*>}
    */
-  async deleteActor({ id, pictureId }) {
+  async deleteActor(actorId) {
     const { ctx, app: { mysql }, config } = this;
+    ctx.logger.debug('[ActorService][deleteActor] [mgs]--> enter');
     cacheTotal = null;
-    if (!id) {
+    if (!actorId) {
       return new Promise(resolve => {
-        ctx.logger.warn('[ActorService][deleteActor] msg--> actorId is empty');
+        ctx.logger.error('[ActorService][deleteActor] msg--> actorId is empty');
         resolve({
           status: false,
         });
       });
     }
+    let queryActorSql = ctx.helper.selectColumns({
+      table: config.table.ACTORS,
+      mapColumns: [
+        'pictureId',
+      ],
+    });
+    queryActorSql += mysql._where({
+      ID: actorId,
+    });
+    ctx.logger.debug('[ActorService][deleteActor] queryActorSql-->', queryActorSql);
     return await mysql.beginTransactionScope(async conn => {
-      await conn.delete(config.table.ACTORS, {
-        ID: id,
-      });
-      if (pictureId) {
+      const resultActors = await conn.query(queryActorSql);
+      if (resultActors.length === 1) {
+        const pictureId = resultActors[0].pictureId;
         const sql = `DELETE FROM ${config.table.PICTURE} WHERE ID IN 
         (SELECT PICTURE_ID FROM ${config.table.PICTURE_RELATION}  WHERE MAIN_ID = ${mysql.escape(pictureId)})`;
-        ctx.logger.debug('[ActorService][deleteActor] sql-->', sql);
+        ctx.logger.debug('[ActorService][deleteActor] deletePictureSql-->', sql);
         await conn.query(sql);
         await conn.delete(config.table.PICTURE_RELATION, {
           MAIN_ID: pictureId,
         });
       }
+
+      await conn.delete(config.table.ACTORS, {
+        ID: actorId,
+      });
+
       return {
         status: true,
       };
@@ -87,6 +105,7 @@ class ActorService extends Service {
    */
   async updateActor({ actor, pictureId }) {
     const { ctx, app: { mysql }, config } = this;
+    ctx.logger.debug('[ActorService][updateActor] [mgs]--> enter');
     actor.updateAt = mysql.literals.now;
     cacheTotal = null;
     let pictureRelationField;
@@ -101,7 +120,8 @@ class ActorService extends Service {
     }
 
     actor = ctx.helper.modelToField(actor, true);
-
+    ctx.logger.debug('[ActorService][updateActor] actor-->', actor);
+    ctx.logger.debug('[ActorService][updateActor] pictureRelationField-->', pictureRelationField);
     return await mysql.beginTransactionScope(async conn => {
       await conn.update(config.table.ACTORS, actor);
       if (pictureId) {
@@ -121,6 +141,7 @@ class ActorService extends Service {
    */
   async getActors({ size, num, queryCase }) {
     const { ctx, app: { mysql }, config } = this;
+    ctx.logger.debug('[ActorService][getActors] [msg]--> enter');
     const pageSize = size || 10,
       pageNumber = num || 1;
     const offset = (pageNumber - 1) * pageSize;

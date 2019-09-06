@@ -159,7 +159,6 @@ module.exports = {
         if (!fs.existsSync(dirPathName)) {
           fs.mkdirSync(dirPathName);
         }
-        this.logger.debug('[helper] [getMkdirName] dirPathName=', dirPathName);
       });
     } else {
       dirPathName = path.join(this.config.baseDir, baseDir);

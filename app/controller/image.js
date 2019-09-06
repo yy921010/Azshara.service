@@ -35,7 +35,7 @@ class ImageController extends Controller {
     const writeStream = fs.createWriteStream(path.join(targetPath, fileName));
     try {
       await awaitStreamReady(stream.pipe(writeStream));
-      ctx.logger.debug('[ImageController][index][msg]--> insert dir image Success');
+      ctx.logger.info('[ImageController][index][msg]--> insert dir image Success');
       const setImagePath = ctx.helper.pathName(config.upload.media, scope, this.getTimePath(), fixed, fileName);
       const { affectedRows, insertId } = await ctx.service.image.saveImage({
         url: setImagePath,
