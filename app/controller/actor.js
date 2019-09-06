@@ -29,10 +29,24 @@ class ActorController extends Controller {
 
   async update() {
     const { ctx, ctx: { params, request: { body } } } = this;
-    const { actor, picture } = body;
+    const { actor, pictureId } = body;
+    ctx.validate({
+      introduce: {
+        type: 'string',
+        required: false,
+      },
+      id: {
+        type: 'number',
+        required: false,
+      },
+      name: {
+        type: 'string',
+        required: false,
+      },
+    }, actor);
     const { id } = params;
     actor.id = id;
-    const { status } = await ctx.service.actor.updateActor({ actor, picture });
+    const { status } = await ctx.service.actor.updateActor({ actor, pictureId });
     if (status) {
       this.success({});
     }

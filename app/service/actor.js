@@ -85,21 +85,29 @@ class ActorService extends Service {
    * @param {actor, picture} params
    * @return {Promise<*>}
    */
-  async updateActor({ actor, picture }) {
+  async updateActor({ actor, pictureId }) {
     const { ctx, app: { mysql }, config } = this;
     actor.updateAt = mysql.literals.now;
-    actor = ctx.helper.modelToField(actor, true);
     cacheTotal = null;
-    if (!ctx.helper.isEmpty(picture)) {
-      picture.updateAt = mysql.literals.now;
-      picture = ctx.helper.modelToField(picture, true);
+    let pictureRelationField;
+    if (pictureId) {
+      actor.pictureId = ctx.helper.randamStr();
+      pictureRelationField = ctx.helper.modelToField({
+        pictureId,
+        mainId: actor.pictureId,
+        updateAt: mysql.literals.now,
+        createAt: mysql.literals.now,
+      });
     }
+
+    actor = ctx.helper.modelToField(actor, true);
+
     return await mysql.beginTransactionScope(async conn => {
       await conn.update(config.table.ACTORS, actor);
-      if (picture) {
-        await conn.update(config.table.PICTURE, picture);
+      if (pictureId) {
+        await conn.insert(config.table.PICTURE_RELATION, pictureRelationField);
       }
-      ctx.logger.info('[ActorService][updateActor] msg--> update table actor|picture');
+      ctx.logger.info('[ActorService][updateActor] msg--> update table actor | picture');
       return {
         status: true,
       };

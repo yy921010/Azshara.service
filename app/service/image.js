@@ -42,7 +42,10 @@ module.exports = class ImageService extends Service {
     return await mysql.beginTransactionScope(async conn => {
       const items = await conn.query(sql);
       const result = await conn.delete(config.table.PICTURE, queryCase);
-      if (result.affectedRows === 0) {
+      const resultRelated = await conn.delete(config.table.PICTURE_RELATION, {
+        PICTURE_ID: id,
+      });
+      if (result.affectedRows === 0 && resultRelated.affectedRows === 0) {
         return new Promise(resolve => resolve({ url: '' }));
       }
       const pictureObject = items[0];
