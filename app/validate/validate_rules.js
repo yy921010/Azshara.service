@@ -12,6 +12,12 @@ module.exports = {
       default: '20',
     },
   },
+  updateId: {
+    id: {
+      type: 'string',
+      required: false,
+    },
+  },
   queryId: {
     id: {
       type: 'number',

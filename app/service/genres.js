@@ -23,6 +23,7 @@ class GenresService extends Service {
     const insertResult = await mysql.insert(config.table.GENRES, genres);
     return {
       status: insertResult.affectedRows >= 1,
+      topicId: insertResult.insertId,
     };
   }
 
@@ -72,9 +73,15 @@ class GenresService extends Service {
     const countSql = `SELECT COUNT(1) FROM ${config.table.GENRES}`;
     let sql = ctx.helper.selectColumns({
       table: config.table.GENRES,
-      mapColumns: [ 'name' ],
+      mapColumns: [
+        'name',
+        'id',
+        'createAt',
+        'updateAt',
+      ],
     });
     sql += mysql._limit(+size, +offset);
+    ctx.logger.debug('[genresService] [find] querySql-->', sql);
     return await mysql.beginTransactionScope(async conn => {
       const items = await conn.query(sql);
       const total = await conn.query(countSql);
