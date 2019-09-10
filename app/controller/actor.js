@@ -9,6 +9,16 @@ class ActorController extends Controller {
     const { ctx, ctx: { request } } = this;
     ctx.logger.debug('[ActorController][index] [msg]--> enter');
     ctx.validate(validateRule.query, request.query);
+    if (!ctx.helper.isEmpty(request.query.name)) {
+      const items = await ctx.service.actor
+        .getActors({
+          like: {
+            name: request.query.name,
+          },
+        });
+      this.success(items);
+      return;
+    }
     const items = await ctx.service.actor
       .getActors({
         num: request.query.pageNumber,

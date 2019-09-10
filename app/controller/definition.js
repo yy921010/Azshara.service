@@ -37,18 +37,18 @@ class DefinitionController extends Controller {
 
   async destroy() {
     const { ctx, ctx: { params } } = this;
-    ctx.validate(validateRule.queryId, params);
-    const { status } = await ctx.service.definition.delete({
-      id: params.id,
-    });
+    ctx.validate(validateRule.deleteId, params);
+    const { status } = await ctx.service.definition.delete(params.id);
     return status ? this.success({}) : this.fail(500, '删除失败');
   }
 
   async create() {
     const { ctx } = this;
     ctx.validate(validateRule.definition, ctx.request.body);
-    const { status } = await ctx.service.definition.add([ ctx.request.body ]);
-    return status ? this.success(ctx.request.body) : this.fail(500, '新增失败');
+    const { status, topicId } = await ctx.service.definition.add([ ctx.request.body ]);
+    return status ? this.success({
+      topicId,
+    }) : this.fail(500, '新增失败');
   }
 }
 

@@ -23,6 +23,7 @@ class DefinitionService extends Service {
     const insertResult = await mysql.insert(config.table.DEFINITION, definitions);
     return {
       status: insertResult.affectedRows >= 1,
+      topicId: insertResult.insertId,
     };
   }
 

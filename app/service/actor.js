@@ -139,7 +139,7 @@ class ActorService extends Service {
    * @param {size, num, queryCase}params
    * @return {Promise<Promise<*|Promise<any>>|*>}
    */
-  async getActors({ size, num, queryCase }) {
+  async getActors({ size, num, queryCase, like }) {
     const { ctx, app: { mysql }, config } = this;
     ctx.logger.debug('[ActorService][getActors] [msg]--> enter');
     const pageSize = size || 10,
@@ -157,7 +157,7 @@ class ActorService extends Service {
         'pictureId',
       ],
     });
-    if (ctx.helper.isEmpty(queryCase)) {
+    if (ctx.helper.isEmpty(queryCase) && ctx.helper.isEmpty(like)) {
       sql += mysql._limit(+size, +offset);
       ctx.logger.debug('[ActorService][getActor] sql-->', sql);
       return await mysql.beginTransactionScope(async conn => {
@@ -172,8 +172,15 @@ class ActorService extends Service {
         };
       }, ctx);
     }
-    queryCase = ctx.helper.modelToField(queryCase);
-    sql += mysql._where(queryCase);
+    if (!ctx.helper.isEmpty(queryCase)) {
+      queryCase = ctx.helper.modelToField(queryCase);
+      sql += mysql._where(queryCase);
+    }
+
+    if (!ctx.helper.isEmpty(like)) {
+      like = ctx.helper.modelToField(like);
+      sql += ctx.helper.like(like);
+    }
     ctx.logger.debug('[ActorService][getActor] sql-->', sql);
     return new Promise(async resolve => {
       const items = await mysql.query(sql);

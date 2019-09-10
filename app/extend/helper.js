@@ -264,4 +264,18 @@ module.exports = {
     return ' LIMIT ' + offset + ', ' + limit;
   },
 
+  like(object) {
+    if (!object) {
+      return '';
+    }
+    const keys = Object.keys(object);
+    if (keys.length === 1) {
+      const field = keys[0];
+      const queryVlaue = object[field] + '%';
+      return ` WHERE ${field} LIKE '${queryVlaue}'`;
+    }
+    return '';
+
+  },
+
 };
