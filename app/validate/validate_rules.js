@@ -48,7 +48,24 @@ module.exports = {
   },
   video: {
     content: {
-
+      type: 'string',
+      required: false,
+    },
+    genreId: {
+      type: 'number',
+      required: false,
+    },
+    definitionIds: {
+      type: 'string',
+      required: false,
+    },
+    actors: {
+      type: 'string',
+      required: false,
+    },
+    pictureIds: {
+      type: 'string',
+      required: false,
     },
   },
   genre: {

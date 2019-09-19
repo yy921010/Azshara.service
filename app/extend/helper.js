@@ -278,4 +278,16 @@ module.exports = {
 
   },
 
+  parseObject(objectStr) {
+    let result;
+    if (this.isString(objectStr)) {
+      try {
+        result = JSON.parse(objectStr);
+      } catch (e) {
+        this.logger.error('[helper][parseObject] msg--> JSON parse is error');
+      }
+    }
+    return result;
+  },
+
 };

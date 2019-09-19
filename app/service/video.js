@@ -53,10 +53,10 @@ class VideoService extends Service {
    * @param params 参数
    * @return {Promise<void>}
    */
-  async add({ content, pictures, actors, definitions, genres }) {
+  async add({ content, pictureIds, actors, definitionIds, genreId }) {
     const { ctx, app: { mysql }, config } = this;
     let contentActorRelation = [],
-      contentGenresRelation = [],
+      contentGenresRelation,
       contentDefinitionsRelation = [],
       contentPictureRelation = [];
     cacheTotal = null;
@@ -90,31 +90,32 @@ class VideoService extends Service {
       contentActorRelation = ctx.helper.modelToFields(contentActorRelation);
       ctx.logger.debug('[videoService] [add] contentActorRelation-->', contentActorRelation);
     }
-    if (definitions && definitions.length > 0) {
-      contentDefinitionsRelation = definitions.map(definition => {
+    if (definitionIds && definitionIds.length > 0) {
+      contentDefinitionsRelation = definitionIds.map(definitionId => {
         return this.assignTime({
           contentId,
-          definitionId: definition.id,
+          definitionId,
         });
       });
       contentDefinitionsRelation = ctx.helper.modelToFields(contentDefinitionsRelation);
       ctx.logger.debug('[videoService] [add] contentDefinitionsRelation-->', contentDefinitionsRelation);
     }
-    if (genres && genres.length > 0) {
-      contentGenresRelation = genres.map(genre => {
-        return this.assignTime({
-          contentId,
-          genresId: genre.id,
-        });
+
+    if (genreId) {
+      contentGenresRelation = ctx.helper.modelToField({
+        contentId,
+        genresId: genreId,
+        updateAt: mysql.literals.now,
+        createAt: mysql.literals.now,
       });
-      contentGenresRelation = ctx.helper.modelToFields(contentGenresRelation);
       ctx.logger.debug('[videoService] [add] contentGenresRelation-->', contentGenresRelation);
     }
-    if (pictures && pictures.length > 0) {
-      contentPictureRelation = pictures.map(pic => {
+
+    if (pictureIds && pictureIds.length > 0) {
+      contentPictureRelation = pictureIds.map(pictureId => {
         return this.assignTime({
           mainId: contentId,
-          pictureId: pic.id,
+          pictureId,
         });
       });
       contentPictureRelation = ctx.helper.modelToFields(contentPictureRelation);
@@ -132,7 +133,7 @@ class VideoService extends Service {
       if (contentActorRelation.length > 0) {
         await conn.insert(config.table.CONTENT_ACTORS, contentActorRelation);
       }
-      if (contentGenresRelation.length > 0) {
+      if (!ctx.helper.isEmpty(contentGenresRelation)) {
         await conn.insert(config.table.CONTENT_GENRES, contentGenresRelation);
       }
       if (contentDefinitionsRelation.length > 0) {

@@ -12,7 +12,7 @@ class ImageController extends Controller {
   async create() {
     const { ctx, config } = this;
     const stream = await ctx.getFileStream();
-    const { mimeType, fields: { scope, fixed } } = stream;
+    const { mimeType, fields: { scope, fixed, type } } = stream;
     const imageType = mimeType.split('/')[1];
     const fileName = ctx.helper.randamStr() + `.${imageType}`;
     const month = ctx.helper.dayjs()
@@ -39,7 +39,7 @@ class ImageController extends Controller {
       const setImagePath = ctx.helper.pathName(config.upload.media, scope, this.getTimePath(), fixed, fileName);
       const { affectedRows, insertId } = await ctx.service.image.saveImage({
         url: setImagePath,
-        type: fixed,
+        type: type + '',
       });
       if (affectedRows === 1) {
         ctx.logger.debug('[ImageController][index][msg]--> insert image database Success');
