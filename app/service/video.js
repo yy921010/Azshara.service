@@ -312,6 +312,96 @@ class VideoService extends Service {
 
   }
 
+  /**
+   * 查询video 关联数据
+   * @param contentId  关联id
+   * @return {Promise<void>}
+   */
+  async getExtraData(contentId) {
+    const { ctx, app: { mysql }, config } = this;
+
+    const actorEqual = {};
+    actorEqual[`${config.table.ACTORS}.ID`] = `${config.table.CONTENT_ACTORS}.ACTORS`;
+    const actorQuery = {};
+    actorQuery[ `${config.table.CONTENT_ACTORS}.CONTENT_ID`] = mysql.escape(contentId);
+
+
+    let relationActorSql = ctx.helper.selectColumns({
+      table: config.table.ACTORS,
+      mapColumns: [ 'id', 'name', 'introduce' ],
+    },
+    {
+      table: config.table.CONTENT_ACTORS,
+      mapColumns: [ 'type' ],
+    });
+    relationActorSql += ctx.helper.whereMultiTable(actorEqual, actorQuery);
+
+    ctx.logger.debug('[ActorService][getExtraData] relationActorSql-->', relationActorSql);
+
+    const definitionEqual = {};
+    definitionEqual[`${config.table.DEFINITION}.ID`] = `${config.table.CONTENT_DEFINITION}.DEFINITION_ID`;
+    const definitionQuery = {};
+    definitionQuery[ `${config.table.CONTENT_DEFINITION}.CONTENT_ID`] = mysql.escape(contentId);
+
+    let relationDefinitionSql = ctx.helper.selectColumns({
+      table: config.table.DEFINITION,
+      mapColumns: [ 'id', 'type', 'url' ],
+    },
+    {
+      table: config.table.CONTENT_DEFINITION,
+    });
+    relationDefinitionSql += ctx.helper.whereMultiTable(definitionEqual, definitionQuery);
+
+    ctx.logger.debug('[ActorService][getExtraData] relationDefinitionSql-->', relationDefinitionSql);
+
+    const genresEqual = {};
+    genresEqual[`${config.table.GENRES}.ID`] = `${config.table.CONTENT_GENRES}.GENRES_ID`;
+    const genresQuery = {};
+    genresQuery[ `${config.table.CONTENT_GENRES}.CONTENT_ID`] = mysql.escape(contentId);
+
+    let relationGenresSql = ctx.helper.selectColumns({
+      table: config.table.GENRES,
+      mapColumns: [ 'id', 'name' ],
+    },
+    {
+      table: config.table.CONTENT_GENRES,
+    });
+    relationGenresSql += ctx.helper.whereMultiTable(genresEqual, genresQuery);
+
+    ctx.logger.debug('[ActorService][getExtraData] relationGenresSql-->', relationGenresSql);
+
+    const pictureEqual = {};
+    pictureEqual[`${config.table.PICTURE}.ID`] = `${config.table.PICTURE_RELATION}.PICTURE_ID`;
+    const pictureQuery = {};
+    pictureQuery[ `${config.table.PICTURE_RELATION}.MAIN_ID`] = mysql.escape(contentId);
+
+
+    let relationPictureSql = ctx.helper.selectColumns({
+      table: config.table.PICTURE,
+      mapColumns: [ 'id', 'type', 'url' ],
+    },
+    {
+      table: config.table.PICTURE_RELATION,
+    });
+    relationPictureSql += ctx.helper.whereMultiTable(pictureEqual, pictureQuery);
+
+    ctx.logger.debug('[ActorService][getExtraData] relationPictureSql-->', relationPictureSql);
+
+    return await mysql.beginTransactionScope(async conn => {
+      const actors = await conn.query(relationActorSql);
+      const definitions = await conn.query(relationDefinitionSql);
+      const genres = await conn.query(relationGenresSql);
+      const pictures = await conn.query(relationPictureSql);
+      return {
+        actors,
+        definitions,
+        genres,
+        pictures,
+      };
+    });
+  }
+
+
   assignTime(object) {
     return Object.assign(object, {
       updateAt: this.app.mysql.literals.now,

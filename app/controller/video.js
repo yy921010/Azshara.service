@@ -15,6 +15,13 @@ class VideoController extends Controller {
     this.success(items);
   }
 
+  async getExtraData() {
+    const { ctx, ctx: { query } } = this;
+    const mainId = query.contentId;
+    const finalResult = await ctx.service.video.getExtraData(mainId);
+    this.success(finalResult);
+  }
+
   async create() {
     const { ctx } = this;
     ctx.validate(validate.video, ctx.request.body);

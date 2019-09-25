@@ -13,6 +13,8 @@ module.exports = app => {
 
   router.resources('video', `/${app.config.apiVersions}/video`, controller.video);
 
+  router.get(`/${app.config.apiVersions}/video-extra`, controller.video.getExtraData);
+
   router.resources('definition', `/${app.config.apiVersions}/definition`, controller.definition);
 
   router.resources('genres', `/${app.config.apiVersions}/genre`, controller.genres);
