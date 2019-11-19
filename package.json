@@ -1,7 +1,7 @@
 {
-  "name": "azshara",
+  "name": "assassin",
   "version": "1.0.0",
-  "description": "ashara service platform",
+  "description": "assassin service platform",
   "private": true,
   "egg": {
     "declarations": true
@@ -30,8 +30,8 @@
     "node": ">=10.0.0"
   },
   "scripts": {
-    "start": "egg-scripts start --daemon --title=egg-server-Azshara",
-    "stop": "egg-scripts stop --title=egg-server-Azshara",
+    "start": "egg-scripts start --daemon --title=egg-server-assassin",
+    "stop": "egg-scripts stop --title=egg-server-assassin",
     "dev": "egg-bin dev",
     "debug": "egg-bin debug",
     "test": "npm run lint -- --fix && npm run test-local",
@@ -48,6 +48,6 @@
     "type": "git",
     "url": ""
   },
-  "author": "23.9k",
+  "author": "yy921010",
   "license": "MIT"
 }

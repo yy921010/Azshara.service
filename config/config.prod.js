@@ -1,7 +1,6 @@
-/**
- * 此配置文件为开发环境配置
- */
 'use strict';
+
+
 const databaseNames = [ 'moki_blog', 'moki_device', 'moki_user' ];
 const clients = {};
 databaseNames
@@ -20,7 +19,6 @@ databaseNames
     clients[client.database] = client;
   });
 
-'use strict';
 module.exports = appInfo => {
   const config = exports = {};
   config.keys = appInfo.name + '_1545141509031_3673';
@@ -29,9 +27,7 @@ module.exports = appInfo => {
   };
 
   config.logger = {
-    level: 'DEBUG',
-    // 打印所有级别日志到终端
-    consoleLevel: 'DEBUG',
+    level: 'INFO',
   };
   return config;
 };

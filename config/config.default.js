@@ -1,25 +1,6 @@
 /* eslint valid-jsdoc: "off" */
 
 'use strict';
-
-const databaseNames = [ 'moki_blog', 'moki_device', 'moki_user' ];
-const clients = {};
-databaseNames
-  .map(dName => ({
-  // host
-    host: 'localhost',
-    // 端口号
-    port: '3306',
-    // 用户名
-    user: 'root',
-    // 密码
-    password: '12345678',
-    // 数据库名
-    database: dName,
-  })).forEach(client => {
-    clients[client.database] = client;
-  });
-
 /**
  * @param {Egg.EggAppInfo} appInfo app info
  */
@@ -32,9 +13,6 @@ module.exports = appInfo => {
 
   // use for cookie sign key, should change to your own and keep security
   config.keys = appInfo.name + '_1562769362441_5869';
-  config.mysql = {
-    clients,
-  };
   // add your middleware config here
   config.middleware = [ 'errorHandler' ];
   config.errorHandler = {
@@ -45,12 +23,6 @@ module.exports = appInfo => {
   const userConfig = {
     // myAppName: 'egg',
     apiVersions: 'v1',
-  };
-
-  config.logger = {
-    level: 'DEBUG',
-    // 生产环境打印info级别日志
-    allowDebugAtProd: true,
   };
 
   config.upload = {
@@ -68,6 +40,11 @@ module.exports = appInfo => {
 
   config.multipart = {
     fileExtensions: [ '' ],
+  };
+
+  config.Auth2Server = {
+    debug: config.env === 'local',
+    grants: [ 'password', 'refresh_token' ],
   };
 
   return {
