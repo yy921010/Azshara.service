@@ -12,11 +12,12 @@ module.exports = class UserService extends Service {
       return {};
     }
     const userClient = mysql.get('moki_user');
-    const users = await userClient.query('select user.userid,user.password from from user where user.username = ?', [ username ]);
+    const users = await userClient.query('select user.userId,user.password from from user where user.username = ?', [ username ]);
     if (users && users.length >= 0) {
+      const userInfo = users[0];
       return {
-        userId: users[0].userid,
-        password: users[0].password,
+        userId: userInfo.userId,
+        password: userInfo.password,
       };
     }
     return {};

@@ -2,6 +2,7 @@
 const fs = require('fs');
 const path = require('path');
 const dayjs = require('dayjs');
+const crypto = require('crypto');
 
 const ObjProto = Object.prototype;
 const toString = ObjProto.toString,
@@ -290,4 +291,10 @@ module.exports = {
     return result;
   },
 
+  cryptoMd5(defaultStr = '', salt = '') {
+    const saltStr = `${defaultStr}:${salt}_zxcv4321`;
+    const md5 = crypto.createHash('md5');
+    const result = md5.update(saltStr).digest('hex');
+    return result;
+  },
 };
