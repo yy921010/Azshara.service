@@ -23,6 +23,12 @@ module.exports = appInfo => {
   const userConfig = {
     // myAppName: 'egg',
     apiVersions: 'v1',
+    // 00: 代表业务
+    // 00: 状态
+    errorCode: {
+      UPDATE_FAIL: '0101',
+      CREATED_FAIL: '0201',
+    },
   };
 
   config.upload = {

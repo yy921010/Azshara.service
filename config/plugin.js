@@ -22,4 +22,8 @@ module.exports = {
     package: 'egg-oauth2-server',
   },
 
+  email: {
+    enable: true,
+    package: 'egg-email',
+  },
 };

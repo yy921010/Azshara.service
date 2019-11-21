@@ -1,6 +1,7 @@
 'use strict';
 
 const Service = require('egg').Service;
+const uuidv1 = require('uuid/v1');
 
 module.exports = class DeviceService extends Service {
 
@@ -19,7 +20,7 @@ module.exports = class DeviceService extends Service {
     if (deviceInfos && deviceInfos.length >= 0) {
       deviceInfo = deviceInfos[0];
     }
-    return deviceInfo;
+    return new Promise(resolve => resolve(deviceInfo));
   }
 
   /**
@@ -35,11 +36,10 @@ module.exports = class DeviceService extends Service {
     } else {
       const { ctx, app: { mysql } } = this;
       const deviceClient = mysql.get('moki_device');
-      const newDateStr = new Date().toString();
       deviceInfo.updateTime = deviceClient.literals.now;
       deviceInfo.createdTime = deviceClient.literals.now;
-      deviceInfo.deviceId = ctx.helper.randamStr();
-      deviceInfo.deviceSecret = ctx.helper.cryptoMd5(newDateStr);
+      deviceInfo.deviceId = uuidv1();
+      deviceInfo.deviceSecret = ctx.helper.cryptoMd5(deviceInfo.deviceId);
       const result = await deviceClient.insert('info', deviceInfo);
       if (result.affectedRows === 1) {
         finalResult.status = true;
@@ -52,7 +52,7 @@ module.exports = class DeviceService extends Service {
   }
 
   async updateDeviceInfo(deviceInfo = {}) {
-    const { ctx, app: { mysql } } = this;
+    const { ctx, app: { mysql, email } } = this;
     this.ctx.logger.debug('[device] [updateDeviceInfo] msg--> enter');
     const deviceClient = mysql.get('moki_device');
     deviceInfo.updateTime = deviceClient.literals.now;
@@ -60,8 +60,38 @@ module.exports = class DeviceService extends Service {
       ctx.logger.warn('[device][updateDeviceInfo] msg--> device table is contain proper id');
       return new Promise(resolve => resolve({ status: false }));
     }
-    await deviceClient.update('info', deviceInfo);
-    return new Promise(resolve => resolve({ status: true }));
+    deviceInfo.id = parseInt(deviceInfo.id, 10);
+    deviceInfo.isValidate = parseInt(deviceInfo.isValidate, 10);
+    return deviceClient.beginTransactionScope(async conn => {
+      await conn.update('info', deviceInfo);
+      const deviceInfos = await conn.query('select info.deviceId, info.email, info.deviceSecret from info where info.id = ?', [ deviceInfo.id ]);
+      if (deviceInfos && deviceInfos.length >= 0 && deviceInfo.isValidate === 1) {
+        const dInfo = deviceInfos[0];
+        // send email to deviceId and deviceSecret
+        const BasicId = Buffer.from(`${dInfo.deviceId}:${dInfo.deviceSecret}`).toString('base64');
+        ctx.logger.debug('[DeviceService] [updateDeviceInfo] deviceId and deviceSecret', [ dInfo.deviceId, dInfo.deviceSecret ]);
+        ctx.logger.debug('[DeviceService] [updateDeviceInfo] BasicId', BasicId);
+        ctx.logger.debug('[DeviceService] [updateDeviceInfo] email', dInfo.email);
+        const mailOptions = {
+          from: '805841483@qq.com',
+          to: dInfo.email,
+          subject: '您的设备ID',
+          html: `<h1>请在请求token时 header中添加Authorization 属性，值为： Basic ${BasicId}</h1>`,
+        };
+        email.sendMail(mailOptions, (error, response) => {
+          if (error) {
+            ctx.logger.warn('[DeviceService] [updateDeviceInfo] sendMail error:', error);
+          } else {
+            ctx.logger.info('[DeviceService] [updateDeviceInfo] sendMail:', response.message);
+          }
+          email.close();
+        });
+        return {
+          status: true,
+        };
+      }
+
+    }, ctx);
   }
 
   async deleteDevice(deviceId) {
@@ -71,9 +101,9 @@ module.exports = class DeviceService extends Service {
       return new Promise(resolve => resolve({ status: false }));
     }
     const deviceClient = mysql.get('moki_device');
-    await deviceClient.delete('info', {
-      id: deviceId,
+    const result = await deviceClient.delete('info', {
+      id: +deviceId,
     });
-    return new Promise(resolve => resolve({ status: true }));
+    return new Promise(resolve => resolve({ status: result.affectedRows >= 1 }));
   }
 };
