@@ -2,6 +2,8 @@
 
 const Service = require('egg').Service;
 const uuidv1 = require('uuid/v1');
+const fs = require('fs');
+const path = require('path');
 
 module.exports = class DeviceService extends Service {
 
@@ -20,7 +22,7 @@ module.exports = class DeviceService extends Service {
     if (deviceInfos && deviceInfos.length >= 0) {
       deviceInfo = deviceInfos[0];
     }
-    return new Promise(resolve => resolve(deviceInfo));
+    return deviceInfo;
   }
 
   /**
@@ -46,9 +48,7 @@ module.exports = class DeviceService extends Service {
         finalResult.actorInsertId = result.insertId;
       }
     }
-    return new Promise(resolve => {
-      resolve(finalResult);
-    });
+    return finalResult;
   }
 
   async updateDeviceInfo(deviceInfo = {}) {
@@ -72,11 +72,12 @@ module.exports = class DeviceService extends Service {
         ctx.logger.debug('[DeviceService] [updateDeviceInfo] deviceId and deviceSecret', [ dInfo.deviceId, dInfo.deviceSecret ]);
         ctx.logger.debug('[DeviceService] [updateDeviceInfo] BasicId', BasicId);
         ctx.logger.debug('[DeviceService] [updateDeviceInfo] email', dInfo.email);
+        const htmlStr = await this.readEmailTemplate(BasicId);
         const mailOptions = {
           from: '805841483@qq.com',
           to: dInfo.email,
           subject: '您的设备ID',
-          html: `<h1>请在请求token时 header中添加Authorization 属性，值为： Basic ${BasicId}</h1>`,
+          html: htmlStr,
         };
         email.sendMail(mailOptions, (error, response) => {
           if (error) {
@@ -90,9 +91,16 @@ module.exports = class DeviceService extends Service {
           status: true,
         };
       }
-
     }, ctx);
   }
+
+  async readEmailTemplate(baseId) {
+    const file = path.resolve(this.config.baseDir, 'app/public/html/email-template.html');
+    const template = await fs.readFileSync(file);
+    const templateStr = template.toString();
+    return templateStr.replace(/\{\{(.+?)\}\}/g, baseId);
+  }
+
 
   async deleteDevice(deviceId) {
     const { ctx, app: { mysql } } = this;
@@ -104,6 +112,6 @@ module.exports = class DeviceService extends Service {
     const result = await deviceClient.delete('info', {
       id: +deviceId,
     });
-    return new Promise(resolve => resolve({ status: result.affectedRows >= 1 }));
+    return { status: result.affectedRows >= 1 };
   }
 };
