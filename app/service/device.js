@@ -13,16 +13,14 @@ module.exports = class DeviceService extends Service {
      * @return {Promise<void>}
      */
   async getDeviceInfoByDeviceId(deviceId) {
-    let deviceInfo = {};
     if (!deviceId) return deviceInfo;
     const { ctx, app: { mysql } } = this;
     ctx.logger.debug('[device] [getDeviceInfoByDeviceId] msg--> enter');
     const deviceClient = mysql.get('moki_device');
-    const deviceInfos = await deviceClient.query('select info.deviceSecret, info.email from info where info.deviceId = ?', [ deviceId ]);
-    if (deviceInfos && deviceInfos.length >= 0) {
-      deviceInfo = deviceInfos[0];
-    }
-    return deviceInfo;
+    return await deviceClient.get('info', {
+      deviceId,
+    });
+
   }
 
   /**
@@ -52,7 +50,7 @@ module.exports = class DeviceService extends Service {
   }
 
   async updateDeviceInfo(deviceInfo = {}) {
-    const { ctx, app: { mysql, email } } = this;
+    const { ctx, app: { mysql } } = this;
     this.ctx.logger.debug('[device] [updateDeviceInfo] msg--> enter');
     const deviceClient = mysql.get('moki_device');
     deviceInfo.updateTime = deviceClient.literals.now;
@@ -64,33 +62,27 @@ module.exports = class DeviceService extends Service {
     deviceInfo.isValidate = parseInt(deviceInfo.isValidate, 10);
     return deviceClient.beginTransactionScope(async conn => {
       await conn.update('info', deviceInfo);
-      const deviceInfos = await conn.query('select info.deviceId, info.email, info.deviceSecret from info where info.id = ?', [ deviceInfo.id ]);
-      if (deviceInfos && deviceInfos.length >= 0 && deviceInfo.isValidate === 1) {
-        const dInfo = deviceInfos[0];
+      const dInfo = await conn.get('info', {
+        id: deviceInfo.id,
+      });
+      if (dInfo && dInfo.isValidate === 1) {
         // send email to deviceId and deviceSecret
         const BasicId = Buffer.from(`${dInfo.deviceId}:${dInfo.deviceSecret}`).toString('base64');
         ctx.logger.debug('[DeviceService] [updateDeviceInfo] deviceId and deviceSecret', [ dInfo.deviceId, dInfo.deviceSecret ]);
         ctx.logger.debug('[DeviceService] [updateDeviceInfo] BasicId', BasicId);
         ctx.logger.debug('[DeviceService] [updateDeviceInfo] email', dInfo.email);
         const htmlStr = await this.readEmailTemplate(BasicId);
-        const mailOptions = {
+        await ctx.helper.sendMail({
           from: '805841483@qq.com',
           to: dInfo.email,
-          subject: '您的设备ID',
+          subject: '注册成功',
           html: htmlStr,
-        };
-        email.sendMail(mailOptions, (error, response) => {
-          if (error) {
-            ctx.logger.warn('[DeviceService] [updateDeviceInfo] sendMail error:', error);
-          } else {
-            ctx.logger.info('[DeviceService] [updateDeviceInfo] sendMail:', response.message);
-          }
-          email.close();
         });
         return {
           status: true,
         };
       }
+      return { status: false };
     }, ctx);
   }
 

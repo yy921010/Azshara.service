@@ -10,4 +10,7 @@ module.exports = app => {
   router.post('/device', controller.device.addDevice);
   router.put('/device', controller.device.updateDevice);
   router.delete('/device', controller.device.deleteDevice);
+
+  router.post('/userRegister', controller.user.userRegister);
+  router.get('/emailValidate', controller.email.emailValidate);
 };

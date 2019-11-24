@@ -211,7 +211,6 @@ module.exports = {
     const name = fileName.split('/')
       .pop();
     const prePathName = fileName.replace(/[^\/]*$/, '');
-    console.log(this.config.upload);
     const pathName = path.join(this.config.baseDir, this.config.upload.baseDir, prePathName);
     let files = [];
     let isSuccess = false;
@@ -294,7 +293,39 @@ module.exports = {
   cryptoMd5(defaultStr = '', salt = '') {
     const saltStr = `${defaultStr}:${salt}_zxcv4321`;
     const md5 = crypto.createHash('md5');
-    const result = md5.update(saltStr).digest('hex');
-    return result;
+    return md5.update(saltStr).digest('hex');
+  },
+
+  aesEncrypt(data, key, iv) {
+    let sign = '';
+    const cipher = crypto.createCipheriv('aes-128-cbc', key, iv);
+    sign += cipher.update(data, 'utf8', 'hex');
+    sign += cipher.final('hex');
+    return sign;
+  },
+
+  aesDecrypt(encrypted, key, iv) {
+    let src = '';
+    const cipher = crypto.createDecipheriv('aes-128-cbc', key, iv);
+    src += cipher.update(encrypted, 'hex', 'utf8');
+    src += cipher.final('utf8');
+    return src;
+  },
+
+  sendMail(emailOption) {
+    const { ctx, app: { email } } = this;
+    return new Promise(resolve => {
+      email.sendMail(emailOption, (error, response) => {
+        if (error) {
+          resolve(error);
+          ctx.logger.warn('[helper] [setEmail] sendMail error:', error);
+        } else {
+          resolve(response);
+          ctx.logger.info('[helper] [setEmail] sendMail:', response);
+        }
+        email.close();
+      });
+    });
+
   },
 };
