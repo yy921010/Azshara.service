@@ -1,6 +1,6 @@
 'use strict';
 const Controller = require('./base_controller');
-const { USER_ADD_FAIL } = require('./error_code');
+const { userAddFail, userEmailIsExist, userHasExist, userValidateFailed } = require('./error_code');
 
 module.exports = class UserController extends Controller {
 
@@ -29,13 +29,13 @@ module.exports = class UserController extends Controller {
         {
           name: userInfo.email,
         });
-      addResult.status ? this.success('用户注册成功') : this.success('用户注册失败', USER_ADD_FAIL);
+      addResult.status ? this.success('用户注册成功') : this.fail('用户注册失败', userAddFail);
     } else {
       if (userExist) {
-        this.success('用户已经注册成功');
+        this.fail('用户已经注册', userHasExist);
       }
       if (emailInfo) {
-        this.success('邮箱已经绑定');
+        this.fail('邮箱已经绑定', userEmailIsExist);
       }
     }
   }
@@ -62,7 +62,7 @@ module.exports = class UserController extends Controller {
       });
       this.success('请进入邮箱收取验证码');
     } else {
-      this.success('验证失败');
+      this.fail('验证失败', userValidateFailed);
     }
   }
 };

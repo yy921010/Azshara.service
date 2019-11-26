@@ -56,7 +56,6 @@ module.exports = class UserService extends Service {
         finalResult.id = result.insertId;
         const targetUrl = this.makeRedirectUrl(userInfo.userId, userEmail.validateCode);
         const html = await this.readEmailTemplate(targetUrl);
-        ctx.logger.debug('[UserService] [addUser] html', html);
         await ctx.helper.sendMail({
           from: '805841483@qq.com',
           to: userEmail.name,

@@ -1,5 +1,6 @@
 'use strict';
 const Controller = require('./base_controller');
+const { emailValidateFailed } = require('./error_code');
 module.exports = class EmailController extends Controller {
 
   async emailValidate() {
@@ -18,7 +19,7 @@ module.exports = class EmailController extends Controller {
         userId,
       });
     }
-    result.status ? this.success('验证成功') : this.success('验证失败');
+    result.status ? this.success('验证成功') : this.fail('验证失败', emailValidateFailed);
   }
 
 
@@ -33,6 +34,6 @@ module.exports = class EmailController extends Controller {
       userId: queryOpts.userId,
       validateCode: queryOpts.validateCode,
     });
-    result.status ? this.success('验证成功') : this.success('验证失败');
+    result.status ? this.success('验证成功') : this.fail('验证失败', emailValidateFailed);
   }
 };

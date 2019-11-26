@@ -1,5 +1,6 @@
 'use strict';
 const Controller = require('./base_controller');
+const { deviceAddFailed, deviceDeleteFailed, deviceUpdateFailed } = require('./error_code');
 
 module.exports = class DeviceController extends Controller {
 
@@ -12,7 +13,7 @@ module.exports = class DeviceController extends Controller {
       email: 'email',
     }, deviceInfo);
     const result = await ctx.service.device.addDevice(deviceInfo);
-    result.status ? this.success('新增成功') : this.success('新增失败');
+    result.status ? this.success('新增成功') : this.fail('新增失败', deviceAddFailed);
   }
 
 
@@ -20,7 +21,7 @@ module.exports = class DeviceController extends Controller {
     const { ctx } = this;
     ctx.validate({ id: 'string' }, ctx.request.query);
     const result = await ctx.service.device.deleteDevice(ctx.request.query.id);
-    this.success(result ? '删除成功' : '删除失败');
+    result.status ? this.success('删除成功') : this.fail('删除失败', deviceDeleteFailed);
   }
 
   async updateDevice() {
@@ -35,6 +36,6 @@ module.exports = class DeviceController extends Controller {
       },
     }, deviceInfo);
     const result = await ctx.service.device.updateDeviceInfo(deviceInfo);
-    result.status ? this.success('更新成功') : this.success('更新失败');
+    result.status ? this.success('更新成功') : this.fail('更新失败', deviceUpdateFailed);
   }
 };
