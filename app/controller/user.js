@@ -3,7 +3,10 @@ const Controller = require('./base_controller');
 const { userAddFail, userEmailIsExist, userHasExist, userValidateFailed } = require('./error_code');
 
 module.exports = class UserController extends Controller {
-
+  /**
+   * 添加注释
+   * @returns {Promise<void>}
+   */
   async userRegister() {
     const { ctx } = this;
     const userInfo = ctx.request.body;
