@@ -13,7 +13,7 @@ module.exports = class DeviceService extends Service {
      * @return {Promise<void>}
      */
   async getDeviceInfoByDeviceId(deviceId) {
-    if (!deviceId) return deviceInfo;
+    if (!deviceId) return {};
     const { ctx, app: { mysql } } = this;
     ctx.logger.debug('[device] [getDeviceInfoByDeviceId] msg--> enter');
     const deviceClient = mysql.get('moki_device');

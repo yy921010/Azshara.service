@@ -1,7 +1,6 @@
 'use strict';
 
 const Service = require('egg').Service;
-const uuidv1 = require('uuid/v1');
 const path = require('path');
 const fs = require('fs');
 
@@ -33,7 +32,7 @@ module.exports = class UserService extends Service {
    * @return {Promise<unknown>}
    */
   async addUser(userInfo = {}, userEmail = {}) {
-    const { ctx, app: { mysql } } = this;
+    const { ctx, app: { mysql }, config } = this;
     const finalResult = {};
     finalResult.status = false;
     if (ctx.helper.isEmpty(userInfo) || this.ctx.helper.isEmpty(userEmail)) {
@@ -42,7 +41,7 @@ module.exports = class UserService extends Service {
     }
     const userClient = mysql.get('moki_user');
     userInfo.userId = 'moki_uid+' + ctx.helper.cryptoMd5(userInfo.userName);
-    const _passwordSalt = userInfo.userId + uuidv1() + userInfo.password;
+    const _passwordSalt = userInfo.userId + userInfo.password + config.keys;
     userInfo.password = ctx.helper.cryptoMd5(userInfo.password, _passwordSalt);
     userInfo.updateTime = userClient.literals.now;
     userInfo.createdTime = userClient.literals.now;

@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const ObjProto = Object.prototype;
 const toString = ObjProto.toString,
   hasOwnProperty = ObjProto.hasOwnProperty;
+const TokenPools = [];
 
 module.exports = {
 
@@ -326,6 +327,63 @@ module.exports = {
         email.close();
       });
     });
-
   },
+
+  /**
+   * 保存token
+   * @param token
+   */
+  saveToken(token = {}) {
+    const { user: { userId } } = token;
+    const isExistToken = TokenPools.find(item => item.user.userId === userId);
+    if (isExistToken) {
+      for (let i = 0, len = TokenPools.length; i < len; i++) {
+        const userId = token.user.userId;
+        if (TokenPools[i].user.userId === userId) {
+          TokenPools[i] = token;
+        }
+      }
+    } else {
+      TokenPools.push(token);
+    }
+    const allAccessToken = this.getAllAccessToken();
+    this.ctx.logger.debug('[helper] [saveToken] allAccessToken=', allAccessToken);
+  },
+
+  /**
+   * 通过userid 获得token
+   * @param userId
+   * @return {*}
+   */
+  getAccessToken4Token(accessToken = '') {
+    return TokenPools.find(item => item.accessToken === accessToken);
+  },
+
+  getRefreshToken4Token(refreshToken) {
+    return TokenPools.find(item => item.refreshToken === refreshToken);
+  },
+
+
+  /**
+   * 通过userId 删除Token
+   * @param userId
+   */
+  deleteToken4TokenStr(tokenStr = '', isRefreshToken = false) {
+    const tokenIndex = TokenPools.findIndex(item => (isRefreshToken ?
+      item.refreshToken === tokenStr : item.accessToken === tokenStr));
+    if (tokenIndex >= 0) {
+      TokenPools.splice(tokenIndex, 1);
+      return true;
+    }
+    return false;
+  },
+
+  getAllAccessToken() {
+    return TokenPools.map(tp => tp.accessToken);
+  },
+
+  decodeBase64(str) {
+    return Buffer.from(str, 'base64').toString();
+  },
+
 };

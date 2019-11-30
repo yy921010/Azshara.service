@@ -49,6 +49,18 @@ module.exports = appInfo => {
     grants: [ 'password', 'refresh_token' ],
   };
 
+  config.email = {
+    client: {
+      host: 'smtp.qq.com',
+      secureConnection: true,
+      port: 465,
+      auth: {
+        user: '805841483@qq.com',
+        pass: '',
+      },
+    },
+  };
+
   return {
     ...config,
     ...userConfig,

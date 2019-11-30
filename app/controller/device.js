@@ -13,7 +13,7 @@ module.exports = class DeviceController extends Controller {
       email: 'email',
     }, deviceInfo);
     const result = await ctx.service.device.addDevice(deviceInfo);
-    result.status ? this.success('新增成功') : this.fail('新增失败', deviceAddFailed);
+    result.status ? this.success('终端注册成功') : this.fail('终端注册失败', deviceAddFailed);
   }
 
 
@@ -21,7 +21,7 @@ module.exports = class DeviceController extends Controller {
     const { ctx } = this;
     ctx.validate({ id: 'string' }, ctx.request.query);
     const result = await ctx.service.device.deleteDevice(ctx.request.query.id);
-    result.status ? this.success('删除成功') : this.fail('删除失败', deviceDeleteFailed);
+    result.status ? this.success('终端删除成功') : this.fail('终端删除失败', deviceDeleteFailed);
   }
 
   async updateDevice() {
@@ -36,6 +36,6 @@ module.exports = class DeviceController extends Controller {
       },
     }, deviceInfo);
     const result = await ctx.service.device.updateDeviceInfo(deviceInfo);
-    result.status ? this.success('更新成功') : this.fail('更新失败', deviceUpdateFailed);
+    result.status ? this.success('终端设备更新成功') : this.fail('终端设备更新失败', deviceUpdateFailed);
   }
 };

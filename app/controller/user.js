@@ -2,10 +2,13 @@
 const Controller = require('./base_controller');
 const { userAddFail, userEmailIsExist, userHasExist, userValidateFailed } = require('./error_code');
 
+const CREDENTIALS_REGEXP = /^ *(?:[Bb][Aa][Ss][Ii][Cc]) +([A-Za-z0-9._~+/-]+=*) *$/;
+const USER_PASS_REGEXP = /^([^:]*):(.*)$/;
+
 module.exports = class UserController extends Controller {
   /**
    * 添加注释
-   * @returns {Promise<void>}
+   * @return {Promise<void>}
    */
   async userRegister() {
     const { ctx } = this;
@@ -67,5 +70,41 @@ module.exports = class UserController extends Controller {
     } else {
       this.fail('验证失败', userValidateFailed);
     }
+  }
+
+  /**
+   * 注销登陆
+  */
+  async revokeToken() {
+    const { ctx } = this;
+    ctx.validate({
+      authorization: 'string',
+    }, ctx.request.header);
+    const clientInfoBasic64 = ctx.request.header.authorization;
+    if (typeof clientInfoBasic64 !== 'string') {
+      this.ctx.throw(401, 'authorization is not string');
+      return;
+    }
+    // parse header
+    const match = CREDENTIALS_REGEXP.exec(clientInfoBasic64);
+    if (!match) {
+      this.ctx.throw(401, 'authorization type is wrong');
+      return;
+    }
+    // decode user pass
+    const userPass = USER_PASS_REGEXP.exec(ctx.helper.decodeBase64(match[1]));
+    const clientId = userPass[1];
+    const clientSecret = userPass[2];
+    const deviceInfo = await ctx.service.device.getDeviceInfoByDeviceId(clientId);
+    if (this.ctx.helper.isEmpty(deviceInfo) || clientSecret !== deviceInfo.deviceSecret) {
+      ctx.logger.warn('[user][revokeToken] msg-->client has not registered!!');
+      return;
+    }
+    ctx.validate({
+      access_token: 'string',
+    }, ctx.request.body);
+    const accessToken = ctx.request.body.access_token;
+    ctx.helper.deleteToken4TokenStr(accessToken);
+    this.success('注销成功');
   }
 };

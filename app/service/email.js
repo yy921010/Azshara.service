@@ -53,6 +53,19 @@ module.exports = class EmailService extends Service {
     });
   }
 
+
+  async getEmailByUserId(userId = '') {
+    const { ctx, app: { mysql } } = this;
+    if (!userId) {
+      ctx.logger.debug('[EmailService] [getEmailByUserId] empty');
+      return new Promise(resolve => resolve({}));
+    }
+    const userDatabase = mysql.get('moki_user');
+    return await userDatabase.get('mail', {
+      userId,
+    });
+  }
+
   /**
    * 更新邮箱
    * @param validateCode
