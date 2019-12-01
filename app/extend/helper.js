@@ -2,10 +2,12 @@
 const fs = require('fs');
 const path = require('path');
 const dayjs = require('dayjs');
+const crypto = require('crypto');
 
 const ObjProto = Object.prototype;
 const toString = ObjProto.toString,
   hasOwnProperty = ObjProto.hasOwnProperty;
+const TokenPools = [];
 
 module.exports = {
 
@@ -80,7 +82,7 @@ module.exports = {
     return modelMaps.length > 0 ? modelMaps.map(item => this.modelToField(item)) : [];
   },
 
-  mapColummField(mapColumns = [], table) {
+  mapColumnField(mapColumns = [], table) {
     if (this.isEmpty(mapColumns) || this.isEmpty(table)) {
       return '';
     }
@@ -97,7 +99,7 @@ module.exports = {
     const queryCaseArrs = queryFields
       .map(queryField => {
         return this.isEmpty(queryField.mapColumns) ?
-          '' : this.mapColummField(queryField.mapColumns, queryField.table);
+          '' : this.mapColumnField(queryField.mapColumns, queryField.table);
       })
       .filter(a => a)
       .toString();
@@ -113,7 +115,7 @@ module.exports = {
    *
    * @param {equalCase,queryCase} option
    */
-  whereMultiTable({ equal, query }) {
+  whereMultiTable(equal, query) {
     if (this.isEmpty(equal)) {
       this.logger.warn('[helper][whereMultiTable] msg--> equalField is Empty');
       return '';
@@ -131,19 +133,20 @@ module.exports = {
     return sqlStr;
   },
   /**
-     * 创建初始化文件：upload, .temp
-     */
+   * 创建初始化文件：upload, .temp
+   */
   _makeUploadDir() {
     const { config: { upload: { baseDir } }, config: { upload } } = this;
-    Object.keys(upload).forEach(key => {
-      if ([ 'baseDir', 'imageService' ].includes(key)) {
-        return;
-      }
-      const dirPathName = path.join(this.config.baseDir, baseDir, key);
-      if (!fs.existsSync(dirPathName)) {
-        fs.mkdirSync(dirPathName);
-      }
-    });
+    Object.keys(upload)
+      .forEach(key => {
+        if ([ 'baseDir', 'imageService' ].includes(key)) {
+          return;
+        }
+        const dirPathName = path.join(this.config.baseDir, baseDir, key);
+        if (!fs.existsSync(dirPathName)) {
+          fs.mkdirSync(dirPathName);
+        }
+      });
   },
 
   getMkdirName(...fileNames) {
@@ -158,7 +161,6 @@ module.exports = {
         if (!fs.existsSync(dirPathName)) {
           fs.mkdirSync(dirPathName);
         }
-        this.logger.debug('[helper] [getMkdirName] dirPathName=', dirPathName);
       });
     } else {
       dirPathName = path.join(this.config.baseDir, baseDir);
@@ -177,7 +179,7 @@ module.exports = {
    */
   deleteDir(pathName) {
     let files = [];
-    let isScuess = false;
+    let isSuccess = false;
     // 判断给定的路径是否存在
     if (fs.existsSync(pathName)) {
       // 返回文件和子目录的数组
@@ -185,7 +187,8 @@ module.exports = {
       files.forEach(file => {
         const curPath = path.join(pathName, file);
         // 同步读取文件夹文件，如果是文件夹，则函数回调
-        if (fs.statSync(curPath).isDirectory()) {
+        if (fs.statSync(curPath)
+          .isDirectory()) {
           this.deleteDir(curPath);
         } else {
           // 是指定文件，则删除
@@ -194,18 +197,22 @@ module.exports = {
       });
       // 清除文件夹
       fs.rmdirSync(pathName);
-      isScuess = true;
+      isSuccess = true;
     } else {
       this.logger.warn('[helper] [deleteDir] msg--> the path is not found');
     }
-    return isScuess;
+    return isSuccess;
   },
   /**
    * 根据文件名删除
    * @param {string} name
    * @param {string} pathName
    */
-  deleteFileByName(name, pathName) {
+  deleteFileByName(fileName) {
+    const name = fileName.split('/')
+      .pop();
+    const prePathName = fileName.replace(/[^\/]*$/, '');
+    const pathName = path.join(this.config.baseDir, this.config.upload.baseDir, prePathName);
     let files = [];
     let isSuccess = false;
     // 判断给定的路径是否存在
@@ -215,7 +222,8 @@ module.exports = {
       files.forEach(file => {
         const curPath = path.join(pathName, file);
         // 同步读取文件夹文件，如果是文件夹，则函数回调
-        if (fs.statSync(curPath).isDirectory()) {
+        if (fs.statSync(curPath)
+          .isDirectory()) {
           this.deleteFileByName(curPath, name);
         } else {
           // 是指定文件，则删除
@@ -255,6 +263,127 @@ module.exports = {
       offset = 0;
     }
     return ' LIMIT ' + offset + ', ' + limit;
+  },
+
+  like(object) {
+    if (!object) {
+      return '';
+    }
+    const keys = Object.keys(object);
+    if (keys.length === 1) {
+      const field = keys[0];
+      const queryVlaue = object[field] + '%';
+      return ` WHERE ${field} LIKE '${queryVlaue}'`;
+    }
+    return '';
+
+  },
+
+  parseObject(objectStr) {
+    let result;
+    if (this.isString(objectStr)) {
+      try {
+        result = JSON.parse(objectStr);
+      } catch (e) {
+        this.logger.error('[helper][parseObject] msg--> JSON parse is error');
+      }
+    }
+    return result;
+  },
+
+  cryptoMd5(defaultStr = '', salt = '') {
+    const saltStr = `${defaultStr}:${salt}_zxcv4321`;
+    const md5 = crypto.createHash('md5');
+    return md5.update(saltStr).digest('hex');
+  },
+
+  aesEncrypt(data, key, iv) {
+    let sign = '';
+    const cipher = crypto.createCipheriv('aes-128-cbc', key, iv);
+    sign += cipher.update(data, 'utf8', 'hex');
+    sign += cipher.final('hex');
+    return sign;
+  },
+
+  aesDecrypt(encrypted, key, iv) {
+    let src = '';
+    const cipher = crypto.createDecipheriv('aes-128-cbc', key, iv);
+    src += cipher.update(encrypted, 'hex', 'utf8');
+    src += cipher.final('utf8');
+    return src;
+  },
+
+  sendMail(emailOption) {
+    const { ctx, app: { email } } = this;
+    return new Promise(resolve => {
+      email.sendMail(emailOption, (error, response) => {
+        if (error) {
+          resolve(error);
+          ctx.logger.warn('[helper] [setEmail] sendMail error:', error);
+        } else {
+          resolve(response);
+          ctx.logger.info('[helper] [setEmail] sendMail:', response);
+        }
+        email.close();
+      });
+    });
+  },
+
+  /**
+   * 保存token
+   * @param token
+   */
+  saveToken(token = {}) {
+    const { user: { userId } } = token;
+    const isExistToken = TokenPools.find(item => item.user.userId === userId);
+    if (isExistToken) {
+      for (let i = 0, len = TokenPools.length; i < len; i++) {
+        const userId = token.user.userId;
+        if (TokenPools[i].user.userId === userId) {
+          TokenPools[i] = token;
+        }
+      }
+    } else {
+      TokenPools.push(token);
+    }
+    const allAccessToken = this.getAllAccessToken();
+    this.ctx.logger.debug('[helper] [saveToken] allAccessToken=', allAccessToken);
+  },
+
+  /**
+   * 通过userid 获得token
+   * @param userId
+   * @return {*}
+   */
+  getAccessToken4Token(accessToken = '') {
+    return TokenPools.find(item => item.accessToken === accessToken);
+  },
+
+  getRefreshToken4Token(refreshToken) {
+    return TokenPools.find(item => item.refreshToken === refreshToken);
+  },
+
+
+  /**
+   * 通过userId 删除Token
+   * @param userId
+   */
+  deleteToken4TokenStr(tokenStr = '', isRefreshToken = false) {
+    const tokenIndex = TokenPools.findIndex(item => (isRefreshToken ?
+      item.refreshToken === tokenStr : item.accessToken === tokenStr));
+    if (tokenIndex >= 0) {
+      TokenPools.splice(tokenIndex, 1);
+      return true;
+    }
+    return false;
+  },
+
+  getAllAccessToken() {
+    return TokenPools.map(tp => tp.accessToken);
+  },
+
+  decodeBase64(str) {
+    return Buffer.from(str, 'base64').toString();
   },
 
 };

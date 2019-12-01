@@ -9,9 +9,12 @@ class ActorService extends Service {
    */
   async insertActor({ actor, picture }) {
     const { ctx, app: { mysql }, config } = this;
+    ctx.logger.debug('[ActorService][insertActor] [mgs]--> enter');
     cacheTotal = null;
     let pictureRelationField = {};
-    if (!picture.id) {
+    actor.createAt = mysql.literals.now;
+    actor.updateAt = mysql.literals.now;
+    if (picture.id) {
       actor.pictureId = ctx.helper.randamStr();
       pictureRelationField = ctx.helper.modelToField({
         pictureId: picture.id,
@@ -20,13 +23,13 @@ class ActorService extends Service {
         createAt: mysql.literals.now,
       });
     }
-    actor.createAt = mysql.literals.now;
-    actor.updateAt = mysql.literals.now;
+    ctx.logger.debug('[ActorService][insertActor] pictureRelationField-->', pictureRelationField);
     const actorField = ctx.helper.modelToField(actor);
     const finalResult = {
       status: false,
       actorInsertId: '',
     };
+    ctx.logger.debug('[ActorService][insertActor] actorField-->', actorField);
     return await mysql.beginTransactionScope(async conn => {
       let picVal = {};
       const insertVal = await conn.insert(config.table.ACTORS, actorField);
@@ -49,30 +52,45 @@ class ActorService extends Service {
    * @param {id,picture} params 演员的图片id和pictureId
    * @return {Promise<boolean|*>}
    */
-  async deleteActor({ id, pictureId }) {
+  async deleteActor(actorId) {
     const { ctx, app: { mysql }, config } = this;
+    ctx.logger.debug('[ActorService][deleteActor] [mgs]--> enter');
     cacheTotal = null;
-    if (!id) {
+    if (!actorId) {
       return new Promise(resolve => {
-        ctx.logger.warn('[ActorService][deleteActor] msg--> actorId is empty');
+        ctx.logger.error('[ActorService][deleteActor] msg--> actorId is empty');
         resolve({
           status: false,
         });
       });
     }
+    let queryActorSql = ctx.helper.selectColumns({
+      table: config.table.ACTORS,
+      mapColumns: [
+        'pictureId',
+      ],
+    });
+    queryActorSql += mysql._where({
+      ID: actorId,
+    });
+    ctx.logger.debug('[ActorService][deleteActor] queryActorSql-->', queryActorSql);
     return await mysql.beginTransactionScope(async conn => {
-      await conn.delete(config.table.ACTORS, {
-        ID: id,
-      });
-      if (pictureId) {
+      const resultActors = await conn.query(queryActorSql);
+      if (resultActors.length === 1) {
+        const pictureId = resultActors[0].pictureId;
         const sql = `DELETE FROM ${config.table.PICTURE} WHERE ID IN 
         (SELECT PICTURE_ID FROM ${config.table.PICTURE_RELATION}  WHERE MAIN_ID = ${mysql.escape(pictureId)})`;
-        ctx.logger.debug('[ActorService][deleteActor] sql-->', sql);
+        ctx.logger.debug('[ActorService][deleteActor] deletePictureSql-->', sql);
         await conn.query(sql);
         await conn.delete(config.table.PICTURE_RELATION, {
           MAIN_ID: pictureId,
         });
       }
+
+      await conn.delete(config.table.ACTORS, {
+        ID: actorId,
+      });
+
       return {
         status: true,
       };
@@ -85,21 +103,31 @@ class ActorService extends Service {
    * @param {actor, picture} params
    * @return {Promise<*>}
    */
-  async updateActor({ actor, picture }) {
+  async updateActor({ actor, pictureId }) {
     const { ctx, app: { mysql }, config } = this;
+    ctx.logger.debug('[ActorService][updateActor] [mgs]--> enter');
     actor.updateAt = mysql.literals.now;
-    actor = ctx.helper.modelToField(actor, true);
     cacheTotal = null;
-    if (!ctx.helper.isEmpty(picture)) {
-      picture.updateAt = mysql.literals.now;
-      picture = ctx.helper.modelToField(picture, true);
+    let pictureRelationField;
+    if (pictureId) {
+      actor.pictureId = ctx.helper.randamStr();
+      pictureRelationField = ctx.helper.modelToField({
+        pictureId,
+        mainId: actor.pictureId,
+        updateAt: mysql.literals.now,
+        createAt: mysql.literals.now,
+      });
     }
+
+    actor = ctx.helper.modelToField(actor, true);
+    ctx.logger.debug('[ActorService][updateActor] actor-->', actor);
+    ctx.logger.debug('[ActorService][updateActor] pictureRelationField-->', pictureRelationField);
     return await mysql.beginTransactionScope(async conn => {
       await conn.update(config.table.ACTORS, actor);
-      if (picture) {
-        await conn.update(config.table.PICTURE, picture);
+      if (pictureId) {
+        await conn.insert(config.table.PICTURE_RELATION, pictureRelationField);
       }
-      ctx.logger.info('[ActorService][updateActor] msg--> update table actor|picture');
+      ctx.logger.info('[ActorService][updateActor] msg--> update table actor | picture');
       return {
         status: true,
       };
@@ -111,8 +139,9 @@ class ActorService extends Service {
    * @param {size, num, queryCase}params
    * @return {Promise<Promise<*|Promise<any>>|*>}
    */
-  async getActors({ size, num, queryCase }) {
+  async getActors({ size, num, queryCase, like }) {
     const { ctx, app: { mysql }, config } = this;
+    ctx.logger.debug('[ActorService][getActors] [msg]--> enter');
     const pageSize = size || 10,
       pageNumber = num || 1;
     const offset = (pageNumber - 1) * pageSize;
@@ -128,7 +157,7 @@ class ActorService extends Service {
         'pictureId',
       ],
     });
-    if (ctx.helper.isEmpty(queryCase)) {
+    if (ctx.helper.isEmpty(queryCase) && ctx.helper.isEmpty(like)) {
       sql += mysql._limit(+size, +offset);
       ctx.logger.debug('[ActorService][getActor] sql-->', sql);
       return await mysql.beginTransactionScope(async conn => {
@@ -143,8 +172,15 @@ class ActorService extends Service {
         };
       }, ctx);
     }
-    queryCase = ctx.helper.modelToField(queryCase);
-    sql += mysql._where(queryCase);
+    if (!ctx.helper.isEmpty(queryCase)) {
+      queryCase = ctx.helper.modelToField(queryCase);
+      sql += mysql._where(queryCase);
+    }
+
+    if (!ctx.helper.isEmpty(like)) {
+      like = ctx.helper.modelToField(like);
+      sql += ctx.helper.like(like);
+    }
     ctx.logger.debug('[ActorService][getActor] sql-->', sql);
     return new Promise(async resolve => {
       const items = await mysql.query(sql);

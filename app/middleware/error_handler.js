@@ -1,5 +1,8 @@
 'use strict';
-
+/**
+ * 此中间件用来捕获所有的错误
+ * @return {errorHandler}
+ */
 module.exports = () => {
   return async function errorHandler(ctx, next) {
     try {
@@ -14,7 +17,7 @@ module.exports = () => {
         : err.message;
 
       // 从 error 对象上读出各个属性，设置到响应中
-      ctx.body = { error };
+      ctx.body = { error, code: status, status: 'failed' };
       if (status === 422) {
         ctx.body.detail = err.errors;
       }

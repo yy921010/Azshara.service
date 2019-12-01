@@ -4,14 +4,18 @@ class BaseController extends Controller {
 
   success(data = {} || [], code = 0) {
     this.ctx.body = {
-      success: true,
+      status: 'success',
       data,
       code,
     };
   }
 
-  fail(status = 500, msg = '') {
-    this.ctx.throw(status, msg);
+  fail(msg = '', code = 0) {
+    this.ctx.body = {
+      msg,
+      code,
+      status: 'failed',
+    };
   }
 }
 

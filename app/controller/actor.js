@@ -1,12 +1,24 @@
 'use strict';
 
 const Controller = require('./base_controller');
-const actorRule = require('../validate/actor_rule');
+const validateRule = require('../validate/validate_rules');
 
 class ActorController extends Controller {
+
   async index() {
     const { ctx, ctx: { request } } = this;
-    ctx.validate(actorRule.query, request.query);
+    ctx.logger.debug('[ActorController][index] [msg]--> enter');
+    ctx.validate(validateRule.query, request.query);
+    if (!ctx.helper.isEmpty(request.query.name)) {
+      const items = await ctx.service.actor
+        .getActors({
+          like: {
+            name: request.query.name,
+          },
+        });
+      this.success(items);
+      return;
+    }
     const items = await ctx.service.actor
       .getActors({
         num: request.query.pageNumber,
@@ -17,36 +29,54 @@ class ActorController extends Controller {
 
   async show() {
     const { ctx, ctx: { params } } = this;
+    ctx.logger.debug('[ActorController][show] [msg]--> enter');
     const { id } = params;
     const item = await ctx.service.actor.getActors({
-      id,
+      queryCase: {
+        id,
+      },
     });
     this.success(item);
   }
 
   async update() {
     const { ctx, ctx: { params, request: { body } } } = this;
-    const { actor, picture } = body;
+    ctx.logger.debug('[ActorController][update] [msg]--> enter');
+    const { actor, pictureId } = body;
+    ctx.validate({
+      introduce: {
+        type: 'string',
+        required: false,
+      },
+      id: {
+        type: 'number',
+        required: false,
+      },
+      name: {
+        type: 'string',
+        required: false,
+      },
+    }, actor);
     const { id } = params;
     actor.id = id;
-    const { status } = await ctx.service.updateActor({ actor, picture });
+    const { status } = await ctx.service.actor.updateActor({ actor, pictureId });
     if (status) {
       this.success({});
     }
   }
 
   async destroy() {
-    const { ctx, ctx: { params, request: { body } } } = this;
-    await ctx.service.actor.deleteActor({
-      id: params.id,
-      actorId: body.actorId,
-    });
+    const { ctx, ctx: { params } } = this;
+    ctx.logger.debug('[ActorController][destroy] [msg]--> enter');
+    await ctx.service.actor.deleteActor(params.id);
     return this.success(params.id);
   }
 
   async create() {
     const { ctx } = this;
-    ctx.validate(actorRule.insert, ctx.request.body);
+    ctx.logger.debug('[ActorController][create] [msg]--> enter');
+    ctx.validate(validateRule.actor.insert, ctx.request.body);
+    ctx.logger.debug('[ActorController][destroy] [body]-->', ctx.request.body);
     const insertResult = await ctx.service.actor.insertActor({
       actor: {
         name: ctx.request.body.name,

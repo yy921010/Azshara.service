@@ -1,7 +1,6 @@
-/**
- * 此配置文件为开发环境配置
- */
 'use strict';
+
+
 const databaseNames = [ 'moki_blog', 'moki_device', 'moki_user' ];
 const clients = {};
 databaseNames
@@ -28,15 +27,13 @@ module.exports = appInfo => {
   };
 
   config.logger = {
-    level: 'DEBUG',
-    // 打印所有级别日志到终端
-    consoleLevel: 'DEBUG',
+    level: 'INFO',
   };
 
   config.emailValidateUrl = {
-    protocol: 'http://',
-    hostname: '127.0.0.1',
-    port: '7001',
+    protocol: 'https://',
+    hostname: 'api.tomokotv.com',
+    port: '',
   };
   return config;
 };

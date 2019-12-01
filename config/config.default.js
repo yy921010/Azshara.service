@@ -1,7 +1,6 @@
 /* eslint valid-jsdoc: "off" */
 
 'use strict';
-
 /**
  * @param {Egg.EggAppInfo} appInfo app info
  */
@@ -14,7 +13,6 @@ module.exports = appInfo => {
 
   // use for cookie sign key, should change to your own and keep security
   config.keys = appInfo.name + '_1562769362441_5869';
-
   // add your middleware config here
   config.middleware = [ 'errorHandler' ];
   config.errorHandler = {
@@ -25,12 +23,8 @@ module.exports = appInfo => {
   const userConfig = {
     // myAppName: 'egg',
     apiVersions: 'v1',
-  };
-
-  config.logger = {
-    level: 'DEBUG',
-    // 生产环境打印info级别日志
-    allowDebugAtProd: true,
+    mailCodeKey: 'cLKIHvnWLbiVXnSn',
+    mailCodeIV: 'pHenBAGKuZLaZpXl',
   };
 
   config.upload = {
@@ -42,11 +36,29 @@ module.exports = appInfo => {
   config.security = {
     csrf: {
       headerName: 'x-csrf-token',
+      enable: false,
     },
   };
 
   config.multipart = {
     fileExtensions: [ '' ],
+  };
+
+  config.Auth2Server = {
+    debug: config.env === 'local',
+    grants: [ 'password', 'refresh_token' ],
+  };
+
+  config.email = {
+    client: {
+      host: 'smtp.qq.com',
+      secureConnection: true,
+      port: 465,
+      auth: {
+        user: '805841483@qq.com',
+        pass: '',
+      },
+    },
   };
 
   return {
