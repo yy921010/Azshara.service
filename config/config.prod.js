@@ -29,5 +29,11 @@ module.exports = appInfo => {
   config.logger = {
     level: 'INFO',
   };
+
+  config.emailValidateUrl = {
+    protocol: 'https://',
+    hostname: 'api.tomokotv.com',
+    port: '',
+  };
   return config;
 };

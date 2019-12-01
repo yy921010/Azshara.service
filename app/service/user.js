@@ -79,12 +79,15 @@ module.exports = class UserService extends Service {
     const key = Buffer.from(config.mailCodeKey, 'utf-8');
     const decUserId = ctx.helper.aesEncrypt(userId, key, iv);
     const decCode = ctx.helper.aesEncrypt(validateCode, key, iv);
-    return `http://${ctx.request.hostname}:7001/emailValidate?userId=${decUserId}&validateCode=${decCode}`;
+    const defaultUrl = config.emailValidateUrl.port === '' ?
+      `${config.emailValidateUrl.protocol}/${config.emailValidateUrl.hostname}/${config.apiVersions}` :
+      `${config.emailValidateUrl.protocol}/${config.emailValidateUrl.hostname}:${config.emailValidateUrl.port}/${config.apiVersions}`;
+    return `${defaultUrl}/email-validate?userId=${decUserId}&validateCode=${decCode}`;
   }
 
 
   /**
-   * 添加邮箱
+   * 添加邮箱app/service/user.js:89
    * @param userId
    * @param userEmail
    * @return {Promise<unknown>}
@@ -101,7 +104,9 @@ module.exports = class UserService extends Service {
     userEmail.updateTime = userDataBase.literals.now;
     userEmail.createdTime = userDataBase.literals.now;
     userEmail.userId = userId;
-    userEmail.validateCode = Math.random().toString().slice(-6) + '';
+    userEmail.validateCode = Math.random()
+      .toString()
+      .slice(-6) + '';
     return userDataBase.beginTransactionScope(async conn => {
       const result = await conn.insert('mail', userEmail);
       if (result.affectedRows === 1) {
@@ -110,5 +115,31 @@ module.exports = class UserService extends Service {
       }
       return finalResult;
     }, ctx);
+  }
+
+
+  async updateUserPass(username = '', password = '', userId) {
+    const { ctx, app: { mysql }, config } = this;
+    const finalResult = {};
+    finalResult.status = false;
+    if (!username || !password) {
+      ctx.logger.warn('[UserService] [updateUserPass] msg-->userId or userInfo is empty');
+      return new Promise(resolve => resolve(finalResult));
+    }
+    const userClient = mysql.get('moki_user');
+    const _passwordSalt = userId + password + config.keys;
+    password = ctx.helper.cryptoMd5(password, _passwordSalt);
+    const result = await userClient.update('user', {
+      password,
+      updateTime: userClient.literals.now,
+    }, {
+      where: {
+        username,
+      },
+    });
+    if (result.affectedRows === 1) {
+      finalResult.status = true;
+    }
+    return finalResult;
   }
 };

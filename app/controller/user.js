@@ -1,6 +1,6 @@
 'use strict';
 const Controller = require('./base_controller');
-const { userAddFail, userEmailIsExist, userHasExist, userValidateFailed } = require('./error_code');
+const { userAddFail, userEmailIsExist, userHasExist, userValidateFailed, emailValidateFailed } = require('./error_code');
 
 const CREDENTIALS_REGEXP = /^ *(?:[Bb][Aa][Ss][Ii][Cc]) +([A-Za-z0-9._~+/-]+=*) *$/;
 const USER_PASS_REGEXP = /^([^:]*):(.*)$/;
@@ -70,6 +70,39 @@ module.exports = class UserController extends Controller {
     } else {
       this.fail('验证失败', userValidateFailed);
     }
+  }
+
+  /**
+   * 改变密码完成
+   * @return {Promise<void>}
+   */
+  async changePasswordFinish() {
+    const { ctx } = this;
+    const changeInfo = ctx.request.body;
+    ctx.validate({
+      username: 'string',
+      password: 'password',
+      email: 'email',
+      validateCode: 'string',
+    });
+    const userExist = await ctx.service.user.getUserByUsername(changeInfo.username);
+    const emailInfo = await ctx.service.email.getEmailByName(changeInfo.email);
+
+    if (ctx.helper.isEmpty(userExist)) {
+      this.fail('用户不存在', userValidateFailed);
+      return;
+    }
+
+    if (emailInfo.validateCode !== changeInfo.validateCode) {
+      this.fail('验证码不正确', emailValidateFailed);
+      return;
+    }
+    const result = await ctx.service.user.updateUserPass(changeInfo.username, changeInfo.password, userExist.userId);
+    if (result.status) {
+      await ctx.service.email.updateEmailValidateCode({ validateCode: '', userId: userExist.userId });
+    }
+    this.success('修改完成');
+
   }
 
   /**

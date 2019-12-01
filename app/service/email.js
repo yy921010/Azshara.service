@@ -76,7 +76,7 @@ module.exports = class EmailService extends Service {
     const { app: { mysql } } = this;
     const finalResult = {};
     finalResult.status = false;
-    if (!validateCode || userId) {
+    if (!userId) {
       return new Promise(resolve => resolve(finalResult));
     }
     const userDataBase = mysql.get('moki_user');

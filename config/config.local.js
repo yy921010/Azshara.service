@@ -20,7 +20,6 @@ databaseNames
     clients[client.database] = client;
   });
 
-'use strict';
 module.exports = appInfo => {
   const config = exports = {};
   config.keys = appInfo.name + '_1545141509031_3673';
@@ -32,6 +31,12 @@ module.exports = appInfo => {
     level: 'DEBUG',
     // 打印所有级别日志到终端
     consoleLevel: 'DEBUG',
+  };
+
+  config.emailValidateUrl = {
+    protocol: 'http://',
+    hostname: '127.0.0.1',
+    port: '7001',
   };
   return config;
 };
