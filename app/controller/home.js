@@ -5,7 +5,7 @@ const Controller = require('egg').Controller;
 class HomeController extends Controller {
   async index() {
     const { ctx } = this;
-    ctx.body = 'hi, egg';
+    ctx.body = '<h1>hi, this is a tomokotv service</h1>';
   }
 
   async showAuth() {
