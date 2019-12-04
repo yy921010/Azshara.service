@@ -56,7 +56,7 @@ module.exports = appInfo => {
       port: 465,
       auth: {
         user: '805841483@qq.com',
-        pass: '',
+        pass: 'myznbcqeocegbffa',
       },
     },
   };

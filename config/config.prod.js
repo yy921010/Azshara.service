@@ -1,6 +1,4 @@
 'use strict';
-
-
 const databaseNames = [ 'moki_blog', 'moki_device', 'moki_user' ];
 const clients = {};
 databaseNames
@@ -12,7 +10,7 @@ databaseNames
     // 用户名
     user: 'root',
     // 密码
-    password: '12345678',
+    password: '1qaz@WSX',
     // 数据库名
     database: dName,
   })).forEach(client => {
