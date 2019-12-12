@@ -47,6 +47,19 @@ module.exports = class UserController extends Controller {
   }
 
 
+  async getUserInfo() {
+    const { ctx } = this;
+    ctx.validate(
+      {
+        username: 'string',
+      },
+      ctx.request.query
+    );
+    const username = ctx.request.query.name;
+    const userInfo = await ctx.service.user.getUserByUsername(username);
+  }
+
+
   async changePassword() {
     const { ctx } = this;
     const userInfo = ctx.request.body;
